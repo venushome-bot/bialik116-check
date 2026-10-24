@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0f766e">
+<title>תל אביב – איתור דירות להשקעה</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body data-page="city" data-city="תל אביב">
+<header class="hero small"><div class="wrap">
+ <h1>תל אביב – סייר הדירות</h1>
+ <div class="sub">כל הנכסים בתל אביב לפי אזור, עם סינון, ניתוח ופסק דין.</div>
+ <span class="badge-date">נתונים מעודכנים ל-24.10.2026</span>
+ <div class="metrics" id="metrics"></div>
+</div></header>
+<nav class="toc" aria-label="ניווט ראשי"><div class="wrap"><a href="index.html">בית</a><a href="tel-aviv.html" class="cur" aria-current="page">תל אביב</a><a href="ramat-gan.html">רמת גן</a><a href="map.html">מפה</a><a href="favorites.html">מועדפים <span class="n" id="favN"></span></a><a href="bialik116.html">ביאליק 116</a><a href="methodology.html">שיטה ומקורות</a></div></nav>
+<main class="wrap">
+<section class="blk" id="explorer"><h2>סייר הדירות – תל אביב, לפי אזור</h2>
+ <p class="lead">סננו, מיינו וחפשו. כל אזור נפתח לתמונת מצב (חציון ₪/מ״ר בבניינים ישנים, מחיר מבוקש, שכירות ותשואה, התחדשות בקרבת) ולכרטיסי הנכסים. ★ מוסיף למועדפים; בכל כרטיס מחשבון משכנתא, הערה אישית ושיתוף.</p>
+ <div class="filterbar" id="fbar">
+  <div class="fb-top">
+   <input type="search" id="q" placeholder="חיפוש רחוב / שכונה" aria-label="חיפוש">
+   <select id="fSort" aria-label="מיון" style="flex:0 1 170px"><option value="score">מיון: ציון</option><option value="disc">מיון: הנחה</option><option value="rd2">מיון: הנחה ריאלית (נטו)</option><option value="yld">מיון: תשואה משוערת</option><option value="price">מיון: מחיר</option><option value="pp">מיון: מחיר למ״ר</option><option value="date">מיון: תאריך פרסום</option></select>
+   <button class="btn sec" id="togf" type="button" aria-expanded="false">סינון מתקדם ⚙</button>
+  </div>
+  <div class="fb-grid">
+   <div><label for="fArea">אזור / שכונה</label><select id="fArea"></select></div>
+   <div><label for="fVerd">פסק דין</label><select id="fVerd"><option value="all">הכל</option><option value="buy">שווה לקנות</option><option value="check">לבדוק לעומק</option><option value="skip">לדלג</option></select></div>
+   <div><label for="fPrice">מחיר מקסימלי</label><select id="fPrice"><option value="5000000">5 מיליון</option><option value="4000000">4 מיליון</option><option value="3000000">3 מיליון</option><option value="2500000">2.5 מיליון</option><option value="2000000">2 מיליון</option></select></div>
+   <div><label for="fRooms">חדרים</label><select id="fRooms"><option value="all">הכל</option><option value="2">עד 2.5</option><option value="3">3–3.5</option><option value="4">4–4.5</option><option value="5">5+</option></select></div>
+   <div><label for="fDisc">הנחה מינימלית</label><select id="fDisc"><option value="0">ללא</option><option value="15">15%+</option><option value="20">20%+</option><option value="25">25%+</option><option value="30">30%+</option></select></div>
+   <div><label for="fWin">תאריך פרסום</label><select id="fWin"><option value="all">כל התאריכים</option><option value="30">30 ימים אחרונים</option><option value="90">3 חודשים</option><option value="180">6 חודשים</option><option value="365">שנה</option><option value="none">ללא תאריך</option></select></div>
+   <div><label for="fGrp">קבוצה</label><select id="fGrp"><option value="all">הכל</option><option value="main">ראשית</option><option value="suspicious">חשודות</option><option value="nodata">מעט נתונים</option><option value="nodate">ללא תאריך</option></select></div>
+   <div><label for="fChg">חדש / ירידת מחיר</label><select id="fChg"><option value="all">הכל</option><option value="any">חדשים או ירידות</option><option value="new">חדשים בלבד</option><option value="drop">ירידות מחיר בלבד</option></select></div>
+   <label class="chk" style="grid-column:1/-1"><input type="checkbox" id="fRen"> רק בתוך או ליד מתחם התחדשות</label>
+   <label class="chk" style="grid-column:1/-1"><input type="checkbox" id="fFav"> ★ המועדפים שלי בלבד</label>
+  </div>
+  <div class="fb-info"><span id="resCnt"></span><span><button class="btn sec" id="openAll" type="button" style="min-height:40px;padding:0 12px">פתח אזורים</button> <button class="btn sec" id="closeAll" type="button" style="min-height:40px;padding:0 12px">סגור</button> <button class="btn sec" id="reset" type="button" style="min-height:40px;padding:0 12px">איפוס</button></span></div>
+ </div>
+ <div id="groups"></div>
+</section>
+</main>
+<footer>האתר מציג הערכות מבוססות נתונים בלבד, אינו ייעוץ השקעות או משפט. נתונים מעודכנים ל-24.10.2026. · <a href="methodology.html">שיטה, מקורות ומגבלות</a></footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

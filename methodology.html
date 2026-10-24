@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0f766e">
+<title>שיטה ומקורות – איתור דירות להשקעה</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body data-page="method">
+<header class="hero small"><div class="wrap">
+ <h1>שיטה, מקורות ומגבלות</h1>
+ <div class="sub">איך חושבו הנתונים, מה לא נסרק, ונכסים שדורשים זהירות.</div>
+ <span class="badge-date">נתונים מעודכנים ל-24.10.2026</span>
+ 
+</div></header>
+<nav class="toc" aria-label="ניווט ראשי"><div class="wrap"><a href="index.html">בית</a><a href="tel-aviv.html">תל אביב</a><a href="ramat-gan.html">רמת גן</a><a href="map.html">מפה</a><a href="favorites.html">מועדפים <span class="n" id="favN"></span></a><a href="bialik116.html">ביאליק 116</a><a href="methodology.html" class="cur" aria-current="page">שיטה ומקורות</a></div></nav>
+<main class="wrap">
+<section class="blk" id="method"><h2>שיטה</h2><div class="panel"><ul id="methodList"></ul>
+ <div class="warn"><b>כל השווי, ההנחות, השטחים הנטו והתשואות הם הערכות.</b> לפני כל התקדמות: נסח טאבו, שטח רשום, היתרים, סטטוס התחדשות מול העירייה ובדיקת יורשים/שוכרים. לא נוצר קשר עם מוכרים או מתווכים.</div>
+ <p id="snapInfo" class="lead" style="margin-top:12px"></p></div></section>
+<section class="blk" id="sources"><h2>מקורות</h2><div class="panel"><ul id="srcList"></ul></div></section>
+<section class="blk" id="limits"><h2>מגבלות – מה לא נסרק ומה לא ודאי</h2><div class="panel"><ul id="limList" class="lim"></ul></div></section>
+<section class="blk" id="rent"><h2>שכירות – נתוני ייחוס</h2>
+ <p class="lead">ממוצע שכר דירה עירוני (הלמ״ס) – משמש כבדיקת סבירות בכרטיסים:</p><div class="tw"><table class="t" id="cbsT"></table></div><p class="lead" id="cbsSrc"></p>
+ <p class="lead">בדיקת סבירות מול אתרי מידע (לא שימשו לחישוב התשואות):</p><div class="tw"><table class="t"><thead><tr><th>מקור</th><th>נתון</th><th>קישור</th></tr></thead><tbody id="rentX"></tbody></table></div></section>
+<section class="blk" id="suspicious"><h2>חשודות / דורשות בדיקה <span class="cnt" id="suspCnt"></span></h2>
+ <p class="lead">הנחה מעל 33% מול העסקאות – כמעט תמיד מסתתרת סיבה (שטח כולל גינה/גג, דירה עתידית, זכויות חלקיות, מצב קיצוני או עסקאות שאינן דומות). לא לסמוך על המספר לפני אימות.</p><div class="cards" id="suspCards"></div></section>
+<section class="blk" id="nodata"><h2>מעט נתונים להשוואה <span class="cnt" id="ndCnt"></span></h2><p class="lead">פחות מ-5 עסקאות דומות באזור, ולכן ההנחה אינה אמינה.</p><div class="cards" id="ndCards"></div></section>
+<section class="blk" id="nodate"><h2>ללא תאריך פרסום (ביטחון נמוך) <span class="cnt" id="nodCnt"></span></h2><p class="lead">מודעות ללא תאריך פרסום ידוע (בעיקר יד2 מחוץ לקובץ התאריכים, מדלן וקומו). נכללו רק אלה שחזקות במיוחד; אי אפשר לאמת שהן בנות פחות משנה.</p><div class="cards" id="nodCards"></div></section>
+<section class="blk" id="dropped"><h2>מה הוצא ולמה</h2><div class="tw"><table class="t" id="dropT"></table></div>
+ <h3>נכסים שנפסלו כי ישנים (12 בולטים)</h3><div class="tw"><table class="t" id="oldT"></table></div></section>
+</main>
+<footer>האתר מציג הערכות מבוססות נתונים בלבד, אינו ייעוץ השקעות או משפט. נתונים מעודכנים ל-24.10.2026. · <a href="methodology.html">שיטה, מקורות ומגבלות</a></footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

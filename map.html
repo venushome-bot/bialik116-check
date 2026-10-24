@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0f766e">
+<title>מפה – איתור דירות להשקעה</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body data-page="map">
+<header class="hero small"><div class="wrap">
+ <h1>מפת הנכסים</h1>
+ <div class="sub">כל הנכסים על מפה, עם סינון לפי עיר ואזור.</div>
+ <span class="badge-date">נתונים מעודכנים ל-24.10.2026</span>
+ 
+</div></header>
+<nav class="toc" aria-label="ניווט ראשי"><div class="wrap"><a href="index.html">בית</a><a href="tel-aviv.html">תל אביב</a><a href="ramat-gan.html">רמת גן</a><a href="map.html" class="cur" aria-current="page">מפה</a><a href="favorites.html">מועדפים <span class="n" id="favN"></span></a><a href="bialik116.html">ביאליק 116</a><a href="methodology.html">שיטה ומקורות</a></div></nav>
+<main class="wrap">
+<section class="blk"><h2>מפה <span class="cnt" id="mCnt"></span></h2>
+ <div class="mapnote">מיקום מדויק (עיגול עם מסגרת לבנה) = לפי כתובת במאגר רשות המסים. נקודה עם מסגרת מקווקוות כהה = מיקום משוער לפי רחוב או קואורדינטת המודעה (ללא מספר בית) – לא בניין מדויק.</div>
+ <div class="mapfb"><select id="mCity" aria-label="עיר"><option value="all">שתי הערים</option><option value="תל אביב">תל אביב</option><option value="רמת גן">רמת גן</option></select>
+ <select id="mArea" aria-label="אזור"></select>
+ <select id="mVerd" aria-label="פסק דין"><option value="all">כל פסקי הדין</option><option value="buy">שווה לקנות</option><option value="check">לבדוק לעומק</option><option value="skip">לדלג</option></select>
+ <label class="chk"><input type="checkbox" id="mFav"> ★ מועדפים בלבד</label></div>
+ <div class="legend"><span><i style="background:#15803d"></i>שווה לקנות</span><span><i style="background:#d97706"></i>לבדוק לעומק</span><span><i style="background:#b91c1c"></i>לדלג</span></div>
+ <div id="map" role="application" aria-label="מפה"></div>
+ <div class="mapnote" id="mapFail" style="display:none">לא ניתן לטעון את המפה (אין חיבור, או שהספרייה/אריחי OpenStreetMap חסומים). הרשימה למטה פועלת כרגיל.</div>
+ <h3>רשימה</h3><div class="tw"><table class="t" id="mList"></table></div></section>
+</main>
+<footer>האתר מציג הערכות מבוססות נתונים בלבד, אינו ייעוץ השקעות או משפט. נתונים מעודכנים ל-24.10.2026. · <a href="methodology.html">שיטה, מקורות ומגבלות</a></footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -375,7 +375,7 @@ function renderGroups(){
     const inCity = list.filter(x=>x.c===cname);
     if (!inCity.length) continue;
     const names = AREAS.filter(a=>a.city===cname && inCity.some(x=>x.h===a.name)).map(a=>a.name);
-    const openAll = names.length<=2 || F.area!=="all";
+    const openAll = false;
     html += `<h3 class="city-h">${cname} <span class="cnt">${inCity.length} נכסים · ${names.length} אזורים</span></h3>`;
     for (const nm of names){
       const ai = AREAS.find(a=>a.city===cname && a.name===nm), its = inCity.filter(x=>x.h===nm);

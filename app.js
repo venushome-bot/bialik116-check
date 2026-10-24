@@ -60,6 +60,8 @@ const ITEMS = RAW.I.map(r => {
 });
 const ITEM_BY_ID = {}; ITEMS.forEach(x=>ITEM_BY_ID[x.id]=x);
 const byG = g => ITEMS.filter(x=>x.g===g);
+const RES = (window.RESEARCH && typeof window.RESEARCH==="object") ? window.RESEARCH : {};
+const hasRes = id => !!RES[id];
 
 /* ---------- favorites & notes (localStorage) ---------- */
 const FKEY = "rs_fav_v1", MKEY = "rs_mort_v1";
@@ -171,6 +173,7 @@ function badgesHtml(x){
   if (x.isNew) b += `<span class="bdg new">חדש · ${isoDmy(x.sn.firstSeen)}</span>`;
   if (x.drop) b += `<span class="bdg drop">ירידת מחיר ${x.drop}%</span>`;
   b += `<span class="bdg fav" data-favb="${esc(x.id)}" style="display:${isFav(x.id)?"inline":"none"}">★ במועדפים</span>`;
+  b += `<a class="bdg rq" data-rqb="${esc(x.id)}" style="display:${isFav(x.id)?"inline":"none"}" href="favorites.html#${hasRes(x.id)?"rpt-"+encodeURIComponent(x.id):"research"}">${hasRes(x.id)?"📄 דוח מחקר":"🔎 בקשת מחקר מעמיק"}</a>`;
   return `<div class="bdgs">${b}</div>`;
 }
 function card(x, open, idp){
@@ -182,7 +185,7 @@ function card(x, open, idp){
   const note = (FAV[x.id]&&FAV[x.id].note)||"";
   const nettag = x.netk==="listing" ? tag("מהמודעה","fact") : tag("הערכה ×0.85");
   return `<details class="card" id="${idp}${x.k}" data-id="${esc(x.id)}"${open?" open":""}><summary>
-   <div class="c1"><span class="rank">#${x.k}</span><div class="addr">${esc(x.a)}<small>${esc(x.h)} · ${esc(x.c)}</small></div><button type="button" class="star${isFav(x.id)?" on":""}" data-id="${esc(x.id)}" aria-label="הוספה למועדפים" aria-pressed="${isFav(x.id)}">${isFav(x.id)?"★":"☆"}</button><span class="score" title="ציון 1–10">${x.s.toFixed(1)}</span></div>
+   <div class="c1"><span class="rank">#${x.k}</span><div class="addr">${esc(x.a)}<small>${esc(x.h)} · ${esc(x.c)}</small></div><a class="shr" href="${esc(waLink(x))}" target="_blank" rel="noopener noreferrer" aria-label="שיתוף ב-WhatsApp" title="שיתוף ב-WhatsApp">⤴</a><button type="button" class="star${isFav(x.id)?" on":""}" data-id="${esc(x.id)}" aria-label="הוספה למועדפים" aria-pressed="${isFav(x.id)}">${isFav(x.id)?"★":"☆"}</button><span class="score" title="ציון 1–10">${x.s.toFixed(1)}</span></div>
    <div class="c2"><span class="price">${nf(x.p)} ₪</span><span class="chip">${x.rm==null?"—":x.rm} חד׳</span><span class="chip">${nf(x.q)} מ״ר</span>${x.f?`<span class="chip">קומה ${esc(x.f)}</span>`:""}${x.yld!=null?`<span class="chip" title="הערכה">תשואה ~${x.yld.toFixed(1)}%</span>`:""}<span class="v ${x.vk}">${VL[x.vk]}</span></div>
    ${badgesHtml(x)}
    <div class="c3"><span>${esc(pp)} · <span class="${dcls}">הנחה ${x.d}%</span> · <span class="${rcls}" title="שמרני, לפי שטח נטו משוער">ריאלית (נטו) ${x.rd2}%</span></span><span class="chev"></span></div>
@@ -213,7 +216,7 @@ function card(x, open, idp){
    <div class="links"><b style="font-size:13px;color:var(--mut)">קישורים למודעה:</b><br>${links}</div>
   </div></details>`;
 }
-const cardsHtml = (arr, nOpen, idp) => arr.length ? arr.map((x,i)=>card(x,i<nOpen,idp)).join("") : `<div class="empty">אין נכסים</div>`;
+const cardsHtml = (arr, nOpen, idp) => arr.length ? arr.map(x=>card(x,false,idp)).join("") : `<div class="empty">אין נכסים</div>`;
 function afterRender(root){
   (root||document).querySelectorAll(".mort").forEach(mortOut);
 }
@@ -223,6 +226,7 @@ document.addEventListener("click", e=>{
   if (s){ e.preventDefault(); e.stopPropagation(); toggleFav(s.dataset.id);
     document.querySelectorAll(".star-b[data-id]").forEach(b=>{ b.textContent = isFav(b.dataset.id)?"★ הסרה ממועדפים":"☆ הוספה למועדפים"; });
     document.querySelectorAll("[data-favb]").forEach(b=>b.style.display=isFav(b.dataset.favb)?"inline":"none");
+    document.querySelectorAll("[data-rqb]").forEach(b=>b.style.display=isFav(b.dataset.rqb)?"inline":"none");
     if (document.body.dataset.page==="favs") renderFavs(); }
 });
 document.addEventListener("input", e=>{
@@ -338,8 +342,8 @@ function bindFilters(){
   $("fFav").addEventListener("change", e=>{ F.fav=e.target.checked; renderGroups(); });
   let t; $("q").addEventListener("input", e=>{ clearTimeout(t); t=setTimeout(()=>{ F.q=e.target.value; renderGroups(); },180); });
   $("togf").addEventListener("click", ()=>{ const o=$("fbar").classList.toggle("open"); $("togf").setAttribute("aria-expanded",o); });
-  $("openAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.area").forEach(d=>d.open=true));
-  $("closeAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.area").forEach(d=>d.open=false));
+  $("openAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.area, #groups details.card").forEach(d=>d.open=true));
+  $("closeAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.card, #groups details.area").forEach(d=>d.open=false));
   $("reset").addEventListener("click", ()=>{ Object.assign(F,{area:"all",verd:"all",price:"5000000",rooms:"all",sort:"score",disc:"0",win:"all",grp:"all",ren:false,fav:false,chg:"all",q:""});
     $("q").value=""; $("fRen").checked=false; $("fFav").checked=false; ["fVerd","fPrice","fRooms","fSort","fDisc","fWin","fGrp","fChg"].forEach(id=>$(id).selectedIndex=0); renderAreaOpts(); renderGroups(); });
 }
@@ -361,7 +365,7 @@ function pageCity(){
 function pageHome(){
   metrics($("metrics"), ITEMS);
   const top = ITEMS.filter(x=>x.g==="main" && x.vk!=="skip").slice(0,15);
-  $("topCnt").textContent = top.length; $("topCards").innerHTML = cardsHtml(top,2,"t");
+  $("topCnt").textContent = top.length; $("topCards").innerHTML = cardsHtml(top,0,"t");
   const chg = ITEMS.filter(x=>x.isNew||x.drop);
   $("chgCnt").textContent = chg.length;
   $("chgCards").innerHTML = chg.length ? cardsHtml(chg,0,"c") : `<div class="panel">עדיין אין נכסים חדשים או ירידות מחיר. כל הנכסים הם נקודת הבסיס מ-${isoDmy(S.baseline)}; התגיות יופיעו אחרי הסריקות היומיות הבאות (נכס שנוסף בשבוע האחרון, או מחיר שירד ב-14 הימים האחרונים).</div>`;
@@ -423,16 +427,149 @@ function favText(){
   const rows = Object.entries(FAV).filter(([id,r])=>r.fav && ITEM_BY_ID[id]).sort((a,b)=>(a[1].t||0)-(b[1].t||0));
   return rows.map(([id,r])=>{ const x=ITEM_BY_ID[id]; return "★ "+x.a+", "+x.h+" ("+x.c+") – "+nf(x.p)+" ₪ · "+(x.rm==null?"—":x.rm)+" חד׳ · "+x.q+" מ״ר · ציון "+x.s.toFixed(1)+" · הנחה "+x.d+"%\n"+x.u+(r.note?"\nהערה: "+r.note:""); }).join("\n\n");
 }
+/* ---------- deep-research request + reports ---------- */
+const RQKEY = "rs_rq_v1";
+let RQ = (()=>{ try { const o=JSON.parse(localStorage.getItem(RQKEY)||"{}"); return {off:o.off||{}, areas:Array.isArray(o.areas)?o.areas.filter(a=>typeof a==="string"):[], notes:typeof o.notes==="string"?o.notes:""}; } catch(e){ return {off:{},areas:[],notes:""}; } })();
+const saveRq = () => { try { localStorage.setItem(RQKEY, JSON.stringify(RQ)); } catch(e){} };
+const favItems = () => Object.entries(FAV).filter(([id,r])=>r.fav && ITEM_BY_ID[id]).sort((a,b)=>(a[1].t||0)-(b[1].t||0)).map(([id])=>ITEM_BY_ID[id]);
+const rqChosen = () => favItems().filter(x=>!RQ.off[x.id]);
+const RQ_TAIL = 'בצע מחקר מעמיק לכל דירה ולאזור שלה: עסקאות אחרונות בבניין, ברחוב ובשכונה, מחיר למ"ר, שכירות ותשואה, גיל הבניין, פוטנציאל התחדשות, וכדאיות קנייה';
+function rqText(){
+  const items = rqChosen(), areas = RQ.areas, notes = RQ.notes.trim();
+  if (!items.length && !areas.length) return "";
+  const L = ["שלום, בקשת מחקר מעמיק – דירות שאהבתי (מהאתר, נתונים מ-"+isoDmy(S.generatedAt)+")",""];
+  if (items.length){
+    L.push("דירות למחקר ("+items.length+"):");
+    items.forEach((x,i)=>{ const n=(FAV[x.id]&&FAV[x.id].note||"").trim();
+      L.push((i+1)+". "+x.a+", "+x.h+" ("+x.c+")");
+      L.push("   מחיר: "+nf(x.p)+" ₪ · "+(x.rm==null?"—":x.rm)+" חד׳ · "+x.q+" מ״ר"+(x.f?" · קומה "+x.f:""));
+      L.push("   מזהה: "+x.id);
+      L.push("   מודעה: "+x.u);
+      if (n) L.push("   הערה שלי: "+n.replace(/\s*\n\s*/g," / "));
+    });
+    L.push("");
+  }
+  if (areas.length){ L.push("אזורים / שכונות / ערים נוספים לחיפוש:"); areas.forEach(a=>L.push("- "+a)); L.push(""); }
+  if (notes){ L.push("הערות נוספות: "+notes); L.push(""); }
+  L.push(RQ_TAIL);
+  return L.join("\n");
+}
+function rqRefreshOut(){
+  const t = rqText(), box=$("rqBox"), wa=$("rqWa");
+  if (box) box.value = t;
+  if (wa) wa.setAttribute("href","https://wa.me/"+(t?"?text="+encodeURIComponent(t):""));
+  if (wa) wa.classList.toggle("dis",!t);
+  if (wa) wa.setAttribute("aria-disabled",t?"false":"true");
+}
+function rqRenderList(){
+  const favs = favItems();
+  $("rqList").innerHTML = favs.length ? favs.map(x=>`<label class="rq-it"><input type="checkbox" data-rqid="${esc(x.id)}"${RQ.off[x.id]?"":" checked"}><span><b>${esc(x.a)}</b> <small>${esc(x.h)} · ${esc(x.c)} · ${nf(x.p)} ₪${hasRes(x.id)?" · יש דוח קודם":""}</small></span></label>`).join("") : `<div class="mut" style="padding:6px 0">אין עדיין מועדפים. סמנו ★ בכרטיס נכס (בדפי תל אביב / רמת גן / מפה) – ואז יופיע כאן. אפשר גם לבקש מחקר על אזור בלבד.</div>`;
+  rqRefreshOut();
+}
+function rqRenderChips(){
+  $("rqChips").innerHTML = RQ.areas.map((a,i)=>`<span class="rq-chip">${esc(a)}<button type="button" data-rqdel="${i}" aria-label="הסרת ${esc(a)}">×</button></span>`).join("");
+  rqRefreshOut();
+}
+function rqAddAreas(){
+  const inp=$("rqAreaIn"); const parts = inp.value.split(/[,،\n]+/).map(t=>t.trim()).filter(Boolean);
+  parts.forEach(p=>{ p=p.slice(0,60); if (!RQ.areas.some(a=>a===p) && RQ.areas.length<30) RQ.areas.push(p); });
+  inp.value=""; saveRq(); rqRenderChips();
+}
+function rqMsg(t){ const m=$("rqMsg"); if(m){ m.textContent=t; } }
+function pageRq(){
+  $("rqNotes").value = RQ.notes;
+  rqRenderList(); rqRenderChips();
+  $("rqList").addEventListener("change", e=>{ const c=e.target.closest("[data-rqid]"); if(!c) return; if (c.checked) delete RQ.off[c.dataset.rqid]; else RQ.off[c.dataset.rqid]=1; saveRq(); rqRefreshOut(); });
+  $("rqAll").addEventListener("click", ()=>{ RQ.off={}; saveRq(); rqRenderList(); });
+  $("rqNone").addEventListener("click", ()=>{ favItems().forEach(x=>RQ.off[x.id]=1); saveRq(); rqRenderList(); });
+  $("rqAreaAdd").addEventListener("click", rqAddAreas);
+  $("rqAreaIn").addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); rqAddAreas(); } });
+  $("rqChips").addEventListener("click", e=>{ const d=e.target.closest("[data-rqdel]"); if(!d) return; RQ.areas.splice(+d.dataset.rqdel,1); saveRq(); rqRenderChips(); });
+  $("rqNotes").addEventListener("input", e=>{ RQ.notes=e.target.value; saveRq(); rqRefreshOut(); });
+  $("rqCopy").addEventListener("click", async ()=>{
+    if ($("rqAreaIn").value.trim()) rqAddAreas();
+    const t=rqText(); if(!t){ rqMsg("בחרו לפחות דירה אחת או הוסיפו אזור."); return; }
+    try { await navigator.clipboard.writeText(t); rqMsg("הבקשה הועתקה. הדביקו אותה בצ'אט עם הסוכן והוא יבצע מחקר ויחזור עם דוח."); }
+    catch(e){ const d=document.querySelector(".rq-prev"); if(d) d.open=true; const b=$("rqBox"); b.value=t; b.focus(); b.select(); rqMsg("לא ניתן להעתיק אוטומטית – הטקסט מסומן בתצוגה המקדימה, העתיקו ידנית (לחיצה ארוכה → העתק)."); }
+  });
+  $("rqWa").addEventListener("click", e=>{
+    if ($("rqAreaIn").value.trim()) rqAddAreas();
+    if (!rqText()){ e.preventDefault(); rqMsg("בחרו לפחות דירה אחת או הוסיפו אזור."); return; }
+    rqMsg("נפתח וואטסאפ – בחרו את הצ'אט עם הסוכן ושלחו.");
+  });
+}
+const num = v => typeof v==="number" && isFinite(v);
+const money = v => num(v) ? nf(v)+" ₪" : (v==null||v===""?"—":esc(v));
+const rdate = d => /^\d{4}-\d{2}-\d{2}/.test(d||"") ? isoDmy(d) : (d?esc(d):"");
+const safeUrl = u => /^https?:\/\//i.test(u||"") ? u : null;
+function rptKV(label, val, sub){ return val==null||val===""?"":`<div><b>${label}</b>${val}${sub?`<span class="sub">${sub}</span>`:""}</div>`; }
+function rptDeals(title, arr){
+  if (!Array.isArray(arr)) return "";
+  if (!arr.length) return `<h5>${title}</h5><p class="mut">לא נמצאו עסקאות רלוונטיות.</p>`;
+  return `<h5>${title} <span class="mut">(${arr.length})</span></h5><div class="tw"><table class="t"><thead><tr><th>תאריך</th><th>כתובת / בניין</th><th>חד׳</th><th>מ״ר</th><th>מחיר</th><th>₪/מ״ר</th><th>הערה</th></tr></thead><tbody>`+
+   arr.map(d=>`<tr><td class="num">${rdate(d.date)}</td><td>${d.address?esc(d.address):""}</td><td>${d.rooms==null?"":esc(d.rooms)}</td><td>${d.sqm==null?"":esc(d.sqm)}</td><td class="num">${d.price==null?"":money(d.price)}</td><td class="num">${d.ppsqm==null?(num(d.price)&&num(d.sqm)&&d.sqm>0?nf(d.price/d.sqm):""):nf(d.ppsqm)}</td><td>${d.note?esc(d.note):""}</td></tr>`).join("")+`</tbody></table></div>`;
+}
+function reportHtml(id, x){
+  const r = RES[id]; if (!r) return "";
+  const ttl = x ? x.a+", "+x.h+" ("+x.c+")" : (r.title||id);
+  const vcode = r.verdict && ["buy","check","skip"].includes(r.verdict.code) ? r.verdict.code : "";
+  const tx = t => t==null||t===""?"":`<p>${esc(t)}</p>`;
+  let h = `<details class="rpt" id="rpt-${esc(id)}"><summary class="rpt-h"><b>📄 דוח מחקר מעמיק – ${esc(ttl)}</b><span class="mut">${r.date?"נערך "+rdate(r.date):""}</span>${vcode?`<span class="v ${vcode}">${VL[vcode]}</span>`:""}<span class="chev"></span></summary>`;
+  h += tx(r.summary);
+  if (r.verdict && (r.verdict.text || (r.verdict.reasoning||[]).length)){
+    h += `<div class="verdict ${vcode||"check"}">פסק דין${vcode?" – "+VL[vcode]:""}${r.verdict.text?": "+esc(r.verdict.text):""}</div>`;
+    if (Array.isArray(r.verdict.reasoning) && r.verdict.reasoning.length) h += `<ul>`+r.verdict.reasoning.map(t=>`<li>${esc(t)}</li>`).join("")+`</ul>`;
+  }
+  const p = r.ppsqm;
+  if (p){
+    h += `<h4>מחיר למ״ר מול האזור</h4><div class="kv">`+rptKV("בנכס (מבוקש)",num(p.listing)?nf(p.listing)+" ₪/מ״ר":null)+rptKV("בבניין",num(p.building)?nf(p.building)+" ₪/מ״ר":null)+rptKV("ברחוב",num(p.street)?nf(p.street)+" ₪/מ״ר":null)+rptKV("בשכונה",num(p.neighborhood)?nf(p.neighborhood)+" ₪/מ״ר":null)+`</div>`+tx(p.note);
+  }
+  const d = r.deals;
+  if (d){
+    h += `<h4>עסקאות אחרונות</h4>`+rptDeals("בבניין",d.building)+rptDeals("ברחוב",d.street)+rptDeals("בשכונה",d.neighborhood)+tx(r.dealsNote);
+  }
+  const rt = r.rent;
+  if (rt){
+    h += `<h4>שכירות ותשואה</h4><div class="kv">`+rptKV("שכירות חודשית משוערת",num(rt.monthly)?nf(rt.monthly)+" ₪":null,rt.range?esc(rt.range):"")+rptKV("תשואה ברוטו",num(rt.yieldPct)?rt.yieldPct.toFixed(1)+"%":null)+`</div>`+tx(rt.basis);
+  }
+  const b = r.building;
+  if (b){
+    h += `<h4>גיל הבניין</h4><div class="kv">`+rptKV("שנת בנייה",b.yearBuilt==null?null:esc(b.yearBuilt),b.ageClass?esc(b.ageClass):"")+`</div>`+tx(b.note);
+  }
+  const rn = r.renewal;
+  if (rn){
+    h += `<h4>פוטנציאל התחדשות</h4>`+(rn.status?`<p><b>${esc(rn.status)}</b></p>`:"")+tx(rn.detail);
+  }
+  if (Array.isArray(r.sources) && r.sources.length){
+    h += `<h4>מקורות</h4><ul>`+r.sources.map(s=>{ const u=safeUrl(s&&s.url); const l=esc((s&&s.label)||(s&&s.url)||"מקור"); return `<li>${u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${l} ↗</a>`:l}${s&&s.note?" – "+esc(s.note):""}</li>`; }).join("")+`</ul>`;
+  }
+  h += `<p class="mut" style="font-size:12.5px">הערכות מבוססות נתונים, לא ייעוץ השקעות. לפני קנייה: נסח טאבו, שטח רשום, היתרים ובדיקה מול העירייה והמוכר.</p></details>`;
+  return h;
+}
+function renderResults(){
+  const ids = Object.keys(RES), favIds = new Set(favItems().map(x=>x.id));
+  $("resCnt").textContent = ids.length;
+  if (!ids.length){ $("resBody").innerHTML = `<div class="panel">עדיין אין תוצאות מחקר. אחרי ששולחים לסוכן בקשת מחקר, הדוחות יופיעו כאן ומתחת לכל מועדף, אחרי העדכון הבא של האתר.</div>`; return; }
+  const row = id => { const x=ITEM_BY_ID[id], r=RES[id], vc=r.verdict&&["buy","check","skip"].includes(r.verdict.code)?r.verdict.code:"";
+    return `<tr><td><a href="#rpt-${encodeURIComponent(id)}">${esc(x?x.a+", "+x.h:(r.title||id))}</a></td><td>${vc?`<span class="v ${vc}">${VL[vc]}</span>`:""}</td><td class="num">${rdate(r.date)}</td><td>${favIds.has(id)?"★":"<span class='mut'>לא במועדפים</span>"}</td></tr>`; };
+  const others = ids.filter(id=>!favIds.has(id));
+  $("resBody").innerHTML = `<div class="tw"><table class="t"><thead><tr><th>נכס</th><th>פסק דין</th><th>תאריך</th><th>מועדף</th></tr></thead><tbody>${ids.map(row).join("")}</tbody></table></div>`+
+    (others.length?`<p class="lead">דוחות על נכסים שאינם במועדפים כרגע:</p>`+others.map(id=>reportHtml(id,ITEM_BY_ID[id])).join(""):"");
+}
 function renderFavs(){
-  const favs = Object.entries(FAV).filter(([id,r])=>r.fav && ITEM_BY_ID[id]).sort((a,b)=>(a[1].t||0)-(b[1].t||0)).map(([id])=>ITEM_BY_ID[id]);
+  const favs = favItems();
   const notesOnly = Object.entries(FAV).filter(([id,r])=>!r.fav && r.note && ITEM_BY_ID[id]).map(([id])=>ITEM_BY_ID[id]);
   $("favCnt").textContent = favs.length;
-  $("favCards").innerHTML = favs.length ? cardsHtml(favs, favs.length<=3?favs.length:0, "f") : `<div class="panel">עדיין אין מועדפים. לחצו על ☆ בכרטיס של נכס כדי להוסיף. המועדפים וההערות נשמרים בדפדפן הזה בלבד (localStorage) ולא נשלחים לשום מקום.</div>`;
+  $("favCards").innerHTML = favs.length ? favs.map(x=>`<div class="favitem">${cardsHtml([x], 0, "f")}${reportHtml(x.id,x)}</div>`).join("") : `<div class="panel">עדיין אין מועדפים. לחצו על ☆ בכרטיס של נכס כדי להוסיף. המועדפים וההערות נשמרים בדפדפן הזה בלבד (localStorage) ולא נשלחים לשום מקום.</div>`;
   $("noteCards").innerHTML = notesOnly.length ? `<h2>הערות על נכסים שלא סומנו</h2>` + cardsHtml(notesOnly,0,"g") : "";
   afterRender(document);
+  if ($("rqList")) rqRenderList();
+  renderResults();
 }
 function pageFavs(){
+  pageRq();
   renderFavs();
+  if (location.hash.length>1){ const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el){ if (el.tagName==="DETAILS") el.open=true; setTimeout(()=>el.scrollIntoView(),50); } }
   $("favCopy").addEventListener("click", async ()=>{ const t=favText(); if(!t){ $("favMsg").textContent="אין מה להעתיק."; return; }
     try { await navigator.clipboard.writeText(t); $("favMsg").textContent="הועתק ללוח."; } catch(e){ $("favBox").value=t; $("favBox").style.display="block"; $("favBox").select(); $("favMsg").textContent="סימנו את הטקסט – העתיקו ידנית."; } });
   $("favDl").addEventListener("click", ()=>{
@@ -485,6 +622,14 @@ function boot(){
   const pg = document.body.dataset.page;
   const f = {home:pageHome, city:pageCity, map:pageMap, favs:pageFavs, bialik:pageBialik, method:pageMethod}[pg];
   if (f) f();
+  if (pg!=="city" && pg!=="map" && (pg==="favs" || document.querySelector("details.card"))){
+    const bar=document.createElement("div"); bar.className="cardtools";
+    bar.innerHTML='<button class="btn sec" id="cardsOpen" type="button">פתח הכול</button><button class="btn sec" id="cardsClose" type="button">סגור הכול</button><span class="mut">הכרטיסים סגורים כברירת מחדל – לחצו על כרטיס לפירוט מלא</span>';
+    if (pg==="home" && $("topCards")) $("topCards").parentNode.insertBefore(bar,$("topCards")); else { const main=document.querySelector("main"); main.insertBefore(bar, main.firstChild); }
+    const all=()=>document.querySelectorAll("main details.card, main details.rpt");
+    $("cardsOpen").addEventListener("click",()=>all().forEach(d=>d.open=true));
+    $("cardsClose").addEventListener("click",()=>all().forEach(d=>d.open=false));
+  }
   updateFavUI();
   document.querySelectorAll("[data-gen]").forEach(e=>e.textContent=isoDmy(S.generatedAt));
 }

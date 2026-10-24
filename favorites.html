@@ -11,7 +11,7 @@
 <body data-page="favs">
 <header class="hero small"><div class="wrap">
  <h1>המועדפים וההערות שלי</h1>
- <div class="sub">הנכסים שסימנתם, עם הערות אישיות. נשמר בדפדפן הזה בלבד.</div>
+ <div class="sub">הנכסים שסימנתם, עם הערות אישיות, בקשת מחקר מעמיק ותוצאות. נשמר בדפדפן הזה בלבד.</div>
  <span class="badge-date">נתונים מעודכנים ל-24.10.2026</span>
  
 </div></header>
@@ -20,10 +20,27 @@
 <section class="blk"><h2>מועדפים <span class="cnt" id="favCnt"></span></h2>
  <div class="tools"><button class="btn" id="favCopy" type="button">העתקת רשימה ללוח</button><button class="btn sec" id="favDl" type="button">הורדה כקובץ JSON</button><button class="btn sec" id="favClear" type="button">מחיקת הכול</button></div>
  <div id="favMsg" class="lead" role="status"></div><textarea id="favBox" class="note" style="display:none;min-height:140px" readonly aria-label="טקסט להעתקה"></textarea>
+ <div class="panel rq" id="research"><h3>בקשת מחקר מעמיק</h3>
+  <p class="lead" style="margin-bottom:8px">סמנו אילו מועדפים לחקור, הוסיפו אזורים נוספים אם רוצים, והעתיקו את הבקשה. <b>הדביקו בצ'אט עם הסוכן והוא יבצע מחקר ויחזור עם דוח.</b> הדוח יופיע כאן בדף אחרי העדכון הבא של האתר.</p>
+  <div class="rq-h"><b>דירות למחקר</b> <span class="rq-sel"><button class="lnk" type="button" id="rqAll">סמן הכול</button> · <button class="lnk" type="button" id="rqNone">נקה</button></span></div>
+  <div id="rqList" class="rq-list"></div>
+  <label for="rqAreaIn" class="rq-h"><b>הוסף אזור / שכונה / עיר נוספים לחיפוש</b> <span class="mut">(אופציונלי)</span></label>
+  <div class="rq-add"><input type="text" id="rqAreaIn" placeholder="למשל: נווה אביבים, גבעתיים, פלורנטין" autocomplete="off" enterkeyhint="done"><button class="btn sec" type="button" id="rqAreaAdd">הוספה</button></div>
+  <div class="rq-chips" id="rqChips" aria-live="polite"></div>
+  <label for="rqNotes" class="rq-h"><b>הערות נוספות לסוכן</b> <span class="mut">(אופציונלי)</span></label>
+  <textarea class="note" id="rqNotes" placeholder="למשל: מעדיף קומה גבוהה, מעלית, תקציב עד…"></textarea>
+  <div class="tools"><button class="btn" id="rqCopy" type="button">העתק בקשה לסוכן</button><a class="btn wa" id="rqWa" href="https://wa.me/" target="_blank" rel="noopener noreferrer">שלח בוואטסאפ</a></div>
+  <div id="rqMsg" class="lead" role="status"></div>
+  <details class="rq-prev"><summary>תצוגה מקדימה של ההודעה</summary><textarea id="rqBox" class="note" style="min-height:180px" readonly aria-label="נוסח הבקשה"></textarea></details>
+  <p class="mut" style="margin:8px 0 0;font-size:13px">בוואטסאפ בוחרים בעצמכם את הצ'אט (הקישור ללא מספר טלפון). הבחירות, האזורים וההערות נשמרים בדפדפן בלבד. שום דבר לא נשלח אוטומטית.</p>
+ </div>
  <div class="cards" id="favCards"></div><div id="noteCards"></div></section>
+<section class="blk" id="results"><h2>תוצאות מחקר <span class="cnt" id="resCnt"></span></h2>
+ <div id="resBody"></div></section>
 </main>
 <footer>האתר מציג הערכות מבוססות נתונים בלבד, אינו ייעוץ השקעות או משפט. נתונים מעודכנים ל-24.10.2026. · <a href="methodology.html">שיטה, מקורות ומגבלות</a></footer>
 <script src="data.js"></script>
+<script src="research.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

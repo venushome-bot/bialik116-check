@@ -62,6 +62,7 @@ const ITEM_BY_ID = {}; ITEMS.forEach(x=>ITEM_BY_ID[x.id]=x);
 const byG = g => ITEMS.filter(x=>x.g===g);
 const RES = (window.RESEARCH && typeof window.RESEARCH==="object") ? window.RESEARCH : {};
 const hasRes = id => !!RES[id];
+const rqShow = id => isFav(id) || hasRes(id);
 
 /* ---------- favorites & notes (localStorage) ---------- */
 const FKEY = "rs_fav_v1", MKEY = "rs_mort_v1";
@@ -161,7 +162,7 @@ function waLink(x){
 }
 function yieldRows(x){
   let r = "";
-  if (x.x==="BIALIK") r += `<div><b>שכירות משוערת / תשואה ברוטו</b>כ-5,200 ₪ לחודש · כ-3.1% ${tag("הערכה")}<span class="sub">מתוך הבדיקה המלאה לביאליק 116 (דף נפרד).</span></div>`;
+  if (x.x==="BIALIK") r += `<div><b>שכירות משוערת / תשואה ברוטו</b>כ-5,200 ₪ לחודש · כ-3.1% ${tag("הערכה")}<span class="sub">מתוך הבדיקה המלאה לביאליק 116 (<a href="favorites.html#rpt-yp9s9woxr">📄 דוח מחקר</a>).</span></div>`;
   else if (x.rent) r += `<div><b>שכירות משוערת (שכונה/סביבה)</b>${nf(x.rent.med)} ₪ לחודש ${tag("הערכה")}<span class="sub">חציון ${x.rent.n} מודעות שכירות דומות (±0.5 חדר, 70%–140% מהשטח) ברדיוס ${x.rent.R} מ׳ · טווח אמצעי ${nf(x.rent.lo)}–${nf(x.rent.hi)} · מקור: doortodoor, נסרק ${isoDmy(S.generatedAt)}. שכר מבוקש ולא חוזה.</span></div>
    <div><b>תשואה ברוטו משוערת</b>${x.yld.toFixed(1)}% ${tag("הערכה")}<span class="sub">שכירות שנתית ÷ מחיר מבוקש, לפני ארנונה, ועד, תחזוקה, מיסים ותקופות ריקות.</span></div>`;
   else r += `<div><b>שכירות / תשואה באזור</b>אין נתון<span class="sub">פחות מ-5 מודעות שכירות דומות ברדיוס 1,200 מ׳ במאגר שנסרק.</span></div>`;
@@ -173,7 +174,7 @@ function badgesHtml(x){
   if (x.isNew) b += `<span class="bdg new">חדש · ${isoDmy(x.sn.firstSeen)}</span>`;
   if (x.drop) b += `<span class="bdg drop">ירידת מחיר ${x.drop}%</span>`;
   b += `<span class="bdg fav" data-favb="${esc(x.id)}" style="display:${isFav(x.id)?"inline":"none"}">★ במועדפים</span>`;
-  b += `<a class="bdg rq" data-rqb="${esc(x.id)}" style="display:${isFav(x.id)?"inline":"none"}" href="favorites.html#${hasRes(x.id)?"rpt-"+encodeURIComponent(x.id):"research"}">${hasRes(x.id)?"📄 דוח מחקר":"🔎 בקשת מחקר מעמיק"}</a>`;
+  b += `<a class="bdg rq" data-rqb="${esc(x.id)}" style="display:${rqShow(x.id)?"inline":"none"}" href="favorites.html#${hasRes(x.id)?"rpt-"+encodeURIComponent(x.id):"research"}">${hasRes(x.id)?"📄 דוח מחקר":"🔎 בקשת מחקר מעמיק"}</a>`;
   return `<div class="bdgs">${b}</div>`;
 }
 function card(x, open, idp){
@@ -226,7 +227,7 @@ document.addEventListener("click", e=>{
   if (s){ e.preventDefault(); e.stopPropagation(); toggleFav(s.dataset.id);
     document.querySelectorAll(".star-b[data-id]").forEach(b=>{ b.textContent = isFav(b.dataset.id)?"★ הסרה ממועדפים":"☆ הוספה למועדפים"; });
     document.querySelectorAll("[data-favb]").forEach(b=>b.style.display=isFav(b.dataset.favb)?"inline":"none");
-    document.querySelectorAll("[data-rqb]").forEach(b=>b.style.display=isFav(b.dataset.rqb)?"inline":"none");
+    document.querySelectorAll("[data-rqb]").forEach(b=>b.style.display=rqShow(b.dataset.rqb)?"inline":"none");
     if (document.body.dataset.page==="favs") renderFavs(); }
 });
 document.addEventListener("input", e=>{
@@ -372,6 +373,7 @@ function pageHome(){
   const bi = ITEMS.find(x=>x.x==="BIALIK");
   $("bialikTxt").textContent = BIALIK;
   if (bi) $("bialikTxt").insertAdjacentHTML("beforeend", ` <a href="${esc(bi.u)}" target="_blank" rel="noopener noreferrer">למודעה ביד2 ↗</a>`);
+  if (bi && $("bialikRpt")) $("bialikRpt").href = "favorites.html#"+(hasRes(bi.id)?"rpt-"+encodeURIComponent(bi.id):"research");
   const cs = c => { const v=ITEMS.filter(x=>x.c===c); return {n:v.length,buy:v.filter(x=>x.vk==="buy").length,d:med(v.map(x=>x.d)),r:v.filter(x=>x.rw).length}; };
   $("cityStats").innerHTML = [["תל אביב",cs("תל אביב")],["רמת גן",cs("רמת גן")]].map(([n,s])=>`<div><b>${n}</b>${s.n} נכסים · הנחה חציונית ${s.d}% · ${s.buy} שווה לקנות · ${s.r} ליד התחדשות</div>`).join("");
   afterRender(document);
@@ -520,6 +522,7 @@ function reportHtml(id, x){
     h += `<div class="verdict ${vcode||"check"}">פסק דין${vcode?" – "+VL[vcode]:""}${r.verdict.text?": "+esc(r.verdict.text):""}</div>`;
     if (Array.isArray(r.verdict.reasoning) && r.verdict.reasoning.length) h += `<ul>`+r.verdict.reasoning.map(t=>`<li>${esc(t)}</li>`).join("")+`</ul>`;
   }
+  if (Array.isArray(r.sections)) r.sections.forEach(sc=>{ if(sc && typeof sc.md==="string") h += (sc.title?`<h4>${esc(sc.title)}</h4>`:"")+`<div class="rmd">${md(sc.md)}</div>`; });
   const p = r.ppsqm;
   if (p){
     h += `<h4>מחיר למ״ר מול האזור</h4><div class="kv">`+rptKV("בנכס (מבוקש)",num(p.listing)?nf(p.listing)+" ₪/מ״ר":null)+rptKV("בבניין",num(p.building)?nf(p.building)+" ₪/מ״ר":null)+rptKV("ברחוב",num(p.street)?nf(p.street)+" ₪/מ״ר":null)+rptKV("בשכונה",num(p.neighborhood)?nf(p.neighborhood)+" ₪/מ״ר":null)+`</div>`+tx(p.note);
@@ -569,7 +572,8 @@ function renderFavs(){
 function pageFavs(){
   pageRq();
   renderFavs();
-  if (location.hash.length>1){ const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el){ if (el.tagName==="DETAILS") el.open=true; setTimeout(()=>el.scrollIntoView(),50); } }
+  const goHash = ()=>{ if (location.hash.length>1){ const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el){ if (el.tagName==="DETAILS") el.open=true; setTimeout(()=>el.scrollIntoView(),50); } } };
+  goHash(); window.addEventListener("hashchange", goHash);
   $("favCopy").addEventListener("click", async ()=>{ const t=favText(); if(!t){ $("favMsg").textContent="אין מה להעתיק."; return; }
     try { await navigator.clipboard.writeText(t); $("favMsg").textContent="הועתק ללוח."; } catch(e){ $("favBox").value=t; $("favBox").style.display="block"; $("favBox").select(); $("favMsg").textContent="סימנו את הטקסט – העתיקו ידנית."; } });
   $("favDl").addEventListener("click", ()=>{
@@ -578,14 +582,6 @@ function pageFavs(){
   $("favClear").addEventListener("click", ()=>{ if(confirm("למחוק את כל המועדפים וההערות מהדפדפן הזה?")){ FAV={}; saveFav(); renderFavs(); updateFavUI(); } });
 }
 
-/* ---------- bialik ---------- */
-function pageBialik(){
-  $("bialikTxt").textContent = BIALIK;
-  const bi = ITEMS.find(x=>x.x==="BIALIK");
-  if (bi){ $("bialikTxt").insertAdjacentHTML("beforeend", ` <a href="${esc(bi.u)}" target="_blank" rel="noopener noreferrer">למודעה ביד2 ↗</a>`); $("bCard").innerHTML = cardsHtml([bi],0,"b"); }
-  $("bbody").innerHTML = md(S.BMD);
-  afterRender(document);
-}
 
 /* ---------- methodology ---------- */
 function pageMethod(){
@@ -620,7 +616,7 @@ function pageMethod(){
 /* ---------- boot ---------- */
 function boot(){
   const pg = document.body.dataset.page;
-  const f = {home:pageHome, city:pageCity, map:pageMap, favs:pageFavs, bialik:pageBialik, method:pageMethod}[pg];
+  const f = {home:pageHome, city:pageCity, map:pageMap, favs:pageFavs, method:pageMethod}[pg];
   if (f) f();
   if (pg!=="city" && pg!=="map" && (pg==="favs" || document.querySelector("details.card"))){
     const bar=document.createElement("div"); bar.className="cardtools";

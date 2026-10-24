@@ -191,3 +191,4 @@ details.rpt:not([open])>summary{margin-bottom:0}
 details.rpt>summary .chev::before{content:"◂";display:inline-block;transition:transform .15s;color:var(--mut)}
 details.rpt[open]>summary .chev::before{transform:rotate(-90deg)}
 details.rpt[open]>summary{margin-bottom:6px}
+.rpt .rmd{margin:4px 0}.rpt .rmd h1,.rpt .rmd h2,.rpt .rmd h3{font-size:15px}

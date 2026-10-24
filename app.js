@@ -169,8 +169,20 @@ function yieldRows(x){
   if (x.cbs) r += `<div><b>בדיקת סבירות – ממוצע עירוני (הלמ״ס)</b>${nf(x.cbs)} ₪ לחודש → ${x.yldC.toFixed(1)}% ${tag("הערכה")}<span class="sub">ממוצע שכר דירה ${esc(x.c)} לטווח חדרים ${esc(bandOf(x.rm))}, מחצית 1 של 2026, כפי שפורסם ב-ynet מנתוני הלמ״ס. ממוצע עירוני כולל חוזים ישנים, לא ספציפי לשכונה.</span></div>`;
   return r;
 }
+function renBadge(x){
+  const c = x.ci>=0 ? CMP[x.ci] : null, stt = c ? (c[4]===1?"מאושר":"בתכנון") : "";
+  let t, k;
+  if (x.ex && x.ex.rv && x.ex.rv.t38){ t = "תמ״א 38 בכתובת"; k = "yes"; }
+  else if (x.ut===1){ t = "בניין חדש · אין התחדשות"; k = "no"; }
+  else if (c && x.rw && x.rd===0){ t = "פינוי־בינוי: בתוך מתחם ("+stt+")"+(x.ut===3?" · יש פוטנציאל":""); k = "yes"; }
+  else if (c && x.rw){ t = "פינוי־בינוי: כ-"+x.rd+" מ׳ ממתחם ("+stt+") · תלוי בהכללת הבניין"; k = "maybe"; }
+  else if (c && x.rd<=500){ t = "מתחם התחדשות במרחק "+x.rd+" מ׳ · לא לתמחר"; k = "maybe"; }
+  else { t = "אין פינוי־בינוי ידוע בקרבת הנכס"; k = "no"; }
+  const yr = x.yb ? "נבנה "+x.yb : (x.age===0 ? "בניין חדש" : x.age===1 ? "בניין ישן · שנה לא ידועה" : "שנת בנייה לא ידועה");
+  return `<span class="bdg ren ${k}" title="הערכה לפי מתחמי התחדשות; ראו פירוט בכרטיס">🏗 ${esc(t)}</span><span class="bdg yr">🏠 ${esc(yr)}</span>`;
+}
 function badgesHtml(x){
-  let b = "";
+  let b = renBadge(x);
   if (x.isNew) b += `<span class="bdg new">חדש · ${isoDmy(x.sn.firstSeen)}</span>`;
   if (x.drop) b += `<span class="bdg drop">ירידת מחיר ${x.drop}%</span>`;
   b += `<span class="bdg fav" data-favb="${esc(x.id)}" style="display:${isFav(x.id)?"inline":"none"}">★ במועדפים</span>`;
@@ -290,7 +302,7 @@ function metrics(el, items){
 }
 
 /* ---------- explorer (city pages) ---------- */
-const F = {area:"all",verd:"all",price:"5000000",rooms:"all",sort:"score",disc:"0",win:"all",grp:"all",ren:false,fav:false,chg:"all",q:""};
+const F = {area:"all",verd:"all",price:"5000000",rooms:"all",sort:"score",disc:"0",win:"all",grp:"all",ren:"all",fav:false,chg:"all",q:""};
 let EXP_CITY = null;
 function filtered(){
   const maxP = Number(F.price), md_ = Number(F.disc), q = F.q.trim();
@@ -300,7 +312,14 @@ function filtered(){
     if (F.grp!=="all" && x.g!==F.grp) return false;
     if (F.verd!=="all" && x.vk!==F.verd) return false;
     if (x.d<md_ || x.p>maxP) return false;
-    if (F.ren && !x.rw) return false;
+    if (F.ren!=="all"){
+      const near = x.rw, cin = x.ci>=0 && x.rd===0, c = x.ci>=0 ? CMP[x.ci] : null;
+      if (F.ren==="any" && !near) return false;
+      if (F.ren==="in" && !cin) return false;
+      if (F.ren==="appr" && !(near && c && c[4]===1)) return false;
+      if (F.ren==="plan" && !(near && c && c[4]!==1)) return false;
+      if (F.ren==="t38" && !(x.ex && x.ex.rv && x.ex.rv.t38)) return false;
+    }
     if (F.fav && !isFav(x.id)) return false;
     if (F.chg==="new" && !x.isNew) return false;
     if (F.chg==="drop" && !x.drop) return false;
@@ -339,14 +358,14 @@ function renderGroups(){
 function bindFilters(){
   const sel = {fArea:"area",fVerd:"verd",fPrice:"price",fRooms:"rooms",fSort:"sort",fDisc:"disc",fWin:"win",fGrp:"grp",fChg:"chg"};
   for (const id in sel) $(id).addEventListener("change", e=>{ F[sel[id]]=e.target.value; renderGroups(); });
-  $("fRen").addEventListener("change", e=>{ F.ren=e.target.checked; renderGroups(); });
+  $("fRen").addEventListener("change", e=>{ F.ren=e.target.value; renderGroups(); });
   $("fFav").addEventListener("change", e=>{ F.fav=e.target.checked; renderGroups(); });
   let t; $("q").addEventListener("input", e=>{ clearTimeout(t); t=setTimeout(()=>{ F.q=e.target.value; renderGroups(); },180); });
   $("togf").addEventListener("click", ()=>{ const o=$("fbar").classList.toggle("open"); $("togf").setAttribute("aria-expanded",o); });
   $("openAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.area, #groups details.card").forEach(d=>d.open=true));
   $("closeAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.card, #groups details.area").forEach(d=>d.open=false));
-  $("reset").addEventListener("click", ()=>{ Object.assign(F,{area:"all",verd:"all",price:"5000000",rooms:"all",sort:"score",disc:"0",win:"all",grp:"all",ren:false,fav:false,chg:"all",q:""});
-    $("q").value=""; $("fRen").checked=false; $("fFav").checked=false; ["fVerd","fPrice","fRooms","fSort","fDisc","fWin","fGrp","fChg"].forEach(id=>$(id).selectedIndex=0); renderAreaOpts(); renderGroups(); });
+  $("reset").addEventListener("click", ()=>{ Object.assign(F,{area:"all",verd:"all",price:"5000000",rooms:"all",sort:"score",disc:"0",win:"all",grp:"all",ren:"all",fav:false,chg:"all",q:""});
+    $("q").value=""; $("fFav").checked=false; ["fRen","fVerd","fPrice","fRooms","fSort","fDisc","fWin","fGrp","fChg"].forEach(id=>$(id).selectedIndex=0); renderAreaOpts(); renderGroups(); });
 }
 function openTarget(){
   const id = new URLSearchParams(location.search).get("id"); if(!id) return;

@@ -189,6 +189,11 @@ function badgesHtml(x){
   b += `<a class="bdg rq" data-rqb="${esc(x.id)}" style="display:${rqShow(x.id)?"inline":"none"}" href="favorites.html#${hasRes(x.id)?"rpt-"+encodeURIComponent(x.id):"research"}">${hasRes(x.id)?"📄 דוח מחקר":"🔎 בקשת מחקר מעמיק"}</a>`;
   return `<div class="bdgs">${b}</div>`;
 }
+function meterHtml(x){
+  const sc = v => Math.max(0, Math.min(100, v/40*100));
+  const rd = x.rd2!=null && x.rd2>=0 ? `<b style="inset-inline-start:${sc(x.rd2).toFixed(1)}%" title="ריאלית (נטו) ${x.rd2}%"></b>` : "";
+  return `<div class="meter${x.d>=15?"":" low"}" role="img" aria-label="הנחה ${x.d}% מול השוק${x.rd2!=null?", ריאלית (נטו) "+x.rd2+"%":""}"><i style="width:${sc(x.d).toFixed(1)}%"></i>${rd}</div><div class="meter-l" aria-hidden="true"><span>0%</span><span>הנחה מול השוק (הסימון = ריאלית)</span><span>40%+</span></div>`;
+}
 function card(x, open, idp){
   const parts = writeup(x);
   const dcls = x.d>=15 ? "disc" : "disc low";
@@ -197,10 +202,11 @@ function card(x, open, idp){
   const links = x.l.map((y,j)=>`<a class="${j?"o":""}" href="${esc(y[1])}" target="_blank" rel="noopener noreferrer">${esc(y[0])} ↗</a>`).join("");
   const note = (FAV[x.id]&&FAV[x.id].note)||"";
   const nettag = x.netk==="listing" ? tag("מהמודעה","fact") : tag("הערכה ×0.85");
-  return `<details class="card" id="${idp}${x.k}" data-id="${esc(x.id)}"${open?" open":""}><summary>
+  return `<details class="card vk-${x.vk}" id="${idp}${x.k}" data-id="${esc(x.id)}"${open?" open":""}><summary>
    <div class="c1"><span class="rank">#${x.k}</span><div class="addr">${esc(x.a)}<small>${esc(x.h)} · ${esc(x.c)}</small></div><a class="shr" href="${esc(waLink(x))}" target="_blank" rel="noopener noreferrer" aria-label="שיתוף ב-WhatsApp" title="שיתוף ב-WhatsApp">⤴</a><button type="button" class="star${isFav(x.id)?" on":""}" data-id="${esc(x.id)}" aria-label="הוספה למועדפים" aria-pressed="${isFav(x.id)}">${isFav(x.id)?"★":"☆"}</button><span class="score" title="ציון 1–10">${x.s.toFixed(1)}</span></div>
    <div class="c2"><span class="price">${nf(x.p)} ₪</span><span class="chip">${x.rm==null?"—":x.rm} חד׳</span><span class="chip">${nf(x.q)} מ״ר</span>${x.f?`<span class="chip">קומה ${esc(x.f)}</span>`:""}${x.yld!=null?`<span class="chip" title="הערכה">תשואה ~${x.yld.toFixed(1)}%</span>`:""}<span class="v ${x.vk}">${VL[x.vk]}</span></div>
    ${badgesHtml(x)}
+   ${meterHtml(x)}
    <div class="c3"><span>${esc(pp)} · <span class="${dcls}">הנחה ${x.d}%</span> · <span class="${rcls}" title="שמרני, לפי שטח נטו משוער">ריאלית (נטו) ${x.rd2}%</span></span><span class="chev"></span></div>
   </summary><div class="cbody">
    <div class="tools"><button class="btn sec star-b" type="button" data-id="${esc(x.id)}">${isFav(x.id)?"★ הסרה ממועדפים":"☆ הוספה למועדפים"}</button><a class="btn wa" href="${esc(waLink(x))}" target="_blank" rel="noopener noreferrer">שיתוף ב-WhatsApp</a></div>
@@ -632,8 +638,50 @@ function pageMethod(){
   afterRender(document);
 }
 
+/* ---------- look & feel: themes, dark mode, back-to-top ---------- */
+const THEMES = [["indigo","אינדיגו","#4338ca"],["ocean","אוקיינוס","#0e7490"],["sunset","שקיעה","#be185d"],["forest","יער","#15803d"]];
+const MODES = [["auto","אוטומטי"],["light","בהיר"],["dark","כהה"]];
+const lsGet = (k,d) => { try { return localStorage.getItem(k) || d; } catch(e){ return d; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch(e){} };
+const sysDark = () => !!(window.matchMedia && matchMedia("(prefers-color-scheme:dark)").matches);
+function applyLook(){
+  const t = lsGet("rs_theme_v1","indigo"), m = lsGet("rs_mode_v1","auto"), h = document.documentElement;
+  h.dataset.theme = THEMES.some(x=>x[0]===t) ? t : "indigo";
+  h.dataset.mode = (m==="dark" || (m==="auto" && sysDark())) ? "dark" : "light";
+  const meta = document.querySelector('meta[name="theme-color"]'), hero = document.querySelector("header.hero");
+  if (meta && hero){ const c = getComputedStyle(hero).getPropertyValue("--h1").trim(); if (c) meta.setAttribute("content", c); }
+  document.querySelectorAll("#themeSw button").forEach(b=>b.setAttribute("aria-checked", b.dataset.t===h.dataset.theme));
+  document.querySelectorAll("#modeSw button").forEach(b=>b.setAttribute("aria-checked", b.dataset.m===m));
+  const q = $("modeQuick"); if (q){ q.textContent = h.dataset.mode==="dark" ? "☀" : "🌙"; q.setAttribute("aria-label", h.dataset.mode==="dark" ? "מעבר למצב בהיר" : "מעבר למצב כהה"); }
+}
+function initLook(){
+  const ctl = $("ctl");
+  if (ctl){
+    ctl.innerHTML = `<button type="button" id="modeQuick" title="בהיר / כהה"></button><button type="button" id="palBtn" aria-label="ערכות צבעים" aria-haspopup="true" aria-expanded="false" title="ערכות צבעים">🎨</button>
+     <div class="pop" id="pal" hidden role="group" aria-label="ערכות צבעים ומצב תצוגה"><h4>ערכת צבעים</h4><div class="sw" id="themeSw" role="radiogroup" aria-label="ערכת צבעים">${THEMES.map(t=>`<button type="button" role="radio" data-t="${t[0]}" aria-checked="false"><i style="background:${t[2]}"></i>${t[1]}</button>`).join("")}</div>
+     <h4>מצב תצוגה</h4><div class="md" id="modeSw" role="radiogroup" aria-label="מצב תצוגה">${MODES.map(m=>`<button type="button" role="radio" data-m="${m[0]}" aria-checked="false">${m[1]}</button>`).join("")}</div></div>`;
+    const pal = $("pal"), pb = $("palBtn");
+    const shut = () => { pal.hidden = true; pb.setAttribute("aria-expanded","false"); };
+    pb.addEventListener("click", e=>{ e.stopPropagation(); pal.hidden = !pal.hidden; pb.setAttribute("aria-expanded", String(!pal.hidden)); });
+    document.addEventListener("click", e=>{ if (!pal.hidden && !e.target.closest("#ctl")) shut(); });
+    document.addEventListener("keydown", e=>{ if (e.key==="Escape" && !pal.hidden){ shut(); pb.focus(); } });
+    $("themeSw").addEventListener("click", e=>{ const b=e.target.closest("button[data-t]"); if(b){ lsSet("rs_theme_v1",b.dataset.t); applyLook(); } });
+    $("modeSw").addEventListener("click", e=>{ const b=e.target.closest("button[data-m]"); if(b){ lsSet("rs_mode_v1",b.dataset.m); applyLook(); } });
+    $("modeQuick").addEventListener("click", ()=>{ lsSet("rs_mode_v1", document.documentElement.dataset.mode==="dark" ? "light" : "dark"); applyLook(); });
+  }
+  if (window.matchMedia) { const mq = matchMedia("(prefers-color-scheme:dark)"); const f = ()=>{ if (lsGet("rs_mode_v1","auto")==="auto") applyLook(); }; mq.addEventListener ? mq.addEventListener("change",f) : (mq.addListener && mq.addListener(f)); }
+  const up = document.createElement("button"); up.type="button"; up.className="totop"; up.id="toTop"; up.setAttribute("aria-label","חזרה לראש העמוד"); up.textContent="↑";
+  document.body.appendChild(up);
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion:reduce)").matches;
+  up.addEventListener("click", ()=>window.scrollTo({top:0,behavior:reduce?"auto":"smooth"}));
+  let tk=false; const onS = ()=>{ if(tk) return; tk=true; requestAnimationFrame(()=>{ up.classList.toggle("show", window.scrollY>700); tk=false; }); };
+  window.addEventListener("scroll", onS, {passive:true}); onS();
+  applyLook();
+}
+
 /* ---------- boot ---------- */
 function boot(){
+  initLook();
   const pg = document.body.dataset.page;
   const f = {home:pageHome, city:pageCity, map:pageMap, favs:pageFavs, method:pageMethod}[pg];
   if (f) f();

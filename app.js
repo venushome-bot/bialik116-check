@@ -30,8 +30,13 @@ const GENERIC = "שטח המודעה כנראה ברוטו מול שטח רשו�
 /* ---------- model ---------- */
 const AREAS = RAW.AR.map(a => ({city:CITIES[a[0]],name:a[1],n:a[2],nm:a[3],med:a[4],nd:a[5],p25:a[6],p75:a[7],ask:a[8],ask25:a[9],ask75:a[10],nask:a[11],ren:a[12],best:a[13],bestscore:a[14],avgdisc:a[15]}));
 const bandOf = rm => rm==null ? null : rm<=2 ? "1-2" : rm<=3 ? "2.5-3" : rm<=4 ? "3.5-4" : "4.5+";
+const VW = S.VIEWS || {}, VWV = VW.views || {}, VWR = VW.removed || {};
+const MOT = S.MOT || {}, MOTI = MOT.items || {}, PFIX = S.PFIX || {};
+const MOTL = Object.assign({inherit:"ירושה",urgent:"מכירה דחופה / חייב למכור",motiv:"מוטיבציית מכירה",abroad:"עזיבת הארץ / רילוקיישן",divorce:"גירושין / פירוק שיתוף",recv:"כינוס נכסים / הוצאה לפועל",nego:"פתוח למו״מ / גמיש במחיר",below:"\"מתחת למחיר השוק\" לפי המפרסם",opp:"\"הזדמנות\" במודעה",drop:"ירידת מחיר",srcph:"שינוי מחיר במקור (לא חד־משמעי)",tag:"תגית \"בהזדמנות\" ביד2"}, MOT.labels||{});
+const MOTLV = {3:"חזק",2:"בינוני",1:"חלש"};
 const ITEMS = RAW.I.map(r => {
-  const ar = AREAS[r[2]], ci = r[11], rd = r[12], cmp = ci>=0 ? CMP[ci] : null, links = r[17].map(decUrl), id = r[17][0];
+  const ar = AREAS[r[2]], ci = r[11], rd = r[12], cmp = ci>=0 ? CMP[ci] : null, id = r[17][0];
+  const links = r[17].map(t => { const l = decUrl(t); return (t[0]==="y" && VWR[t.slice(1)]) ? [l[0]+" (הוסרה)", l[1]] : l; });
   const nb = r[18]===0 && r[9]>=25 && r[15]===0;
   const ex = EX[id] || {}, sn = (SN.listings[id]) || {firstSeen:S.generatedAt, priceHistory:[[S.generatedAt,r[7]]]};
   const x = {id, k:r[0],s:r[1],c:ar.city,h:ar.name,a:r[3],rm:r[4]<0?null:r[4],q:r[5],f:r[6],p:r[7],pp:Math.round(r[7]/r[5]),ep:r[8],e:r[8]*r[5],am:ar.med,an:ar.nd,d:r[9],
@@ -56,6 +61,13 @@ const ITEMS = RAW.I.map(r => {
   x.drop = null;
   if (hist.length>=2){ const a=hist[hist.length-2], b=hist[hist.length-1];
     if (b[1]<a[1] && b[0] > S.baseline && daysBetween(b[0], S.generatedAt) <= 14) x.drop = Math.round((a[1]-b[1])/a[1]*1000)/10; }
+  x.pfix = PFIX[id] || null; if (x.pfix) x.drop = null;   // copy-price difference, not a real price drop
+  // yad2 view counter / removed copies
+  const yids = r[17].filter(t=>t[0]==="y").map(t=>t.slice(1));
+  x.yids = yids; x.y2rm = yids.filter(i=>VWR[i]); x.y2gone = yids.length>0 && x.y2rm.length===yids.length;
+  const vi = yids.find(i=>VWV[i]);
+  x.vw = vi ? Object.assign({yid:vi, vpd:VWV[vi].d>0 ? VWV[vi].v/VWV[vi].d : null}, VWV[vi]) : null;
+  x.mot = MOTI[id] || null; x.hot = !!(x.mot && x.mot.lvl>=2);
   return x;
 });
 const ITEM_BY_ID = {}; ITEMS.forEach(x=>ITEM_BY_ID[x.id]=x);
@@ -177,6 +189,9 @@ function badgesHtml(x){
   if (!x.di) b += `<span class="bdg nod" title="למודעה אין תאריך פרסום ידוע – לא ניתן לאמת שפורסמה ב-${S.RAW.DR.win_months||4} החודשים האחרונים">⚠ תאריך לא מאומת</span>`;
   if (x.isNew) b += `<span class="bdg new">חדש · ${isoDmy(x.sn.firstSeen)}</span>`;
   if (x.drop) b += `<span class="bdg drop">ירידת מחיר ${x.drop}%</span>`;
+  if (x.y2gone) b += `<span class="bdg gone" title="המודעה ביד2 הוסרה (נבדק ${isoDmy(VW.asOf||"")})${x.l.some(y=>!/^יד2/.test(y[0]))?"; קישור במקור אחר עדיין מופיע בכרטיס":""}">🚫 הוסרה מיד2</span>`;
+  if (x.hot){ const s0 = x.mot.s[0]; b += `<span class="bdg mot l${x.mot.lvl}" title="סימן ${MOTLV[x.mot.lvl]} למוכר לחוץ – ראו דף ירושה / לחוצים">🔥 ${esc(MOTL[s0.t]||s0.t)}</span>`; }
+  if (x.vw) b += `<span class="bdg vw" title="מונה הצפיות ביד2, נקרא ${isoDmy(VW.asOf||"")}">👁 ${nf(x.vw.v)} צפיות ב-${x.vw.d} ימים</span>`;
   b += `<span class="bdg fav" data-favb="${esc(x.id)}" style="display:${isFav(x.id)?"inline":"none"}">★ במועדפים</span>`;
   b += `<a class="bdg rq" data-rqb="${esc(x.id)}" style="display:${rqShow(x.id)?"inline":"none"}" href="favorites.html#${hasRes(x.id)?"rpt-"+encodeURIComponent(x.id):"research"}">${hasRes(x.id)?"📄 דוח מחקר":"🔎 בקשת מחקר מעמיק"}</a>`;
   return `<div class="bdgs">${b}</div>`;
@@ -247,6 +262,10 @@ function card(x, open, idp){
   const sSrc = row("תאריך פרסום", x.dt?esc(x.dt):"אין תאריך – ביטחון נמוך", x.dt?"מקור התאריך: "+esc(x.dk):"")
    + row("נראתה לראשונה באתר", isoDmy(x.sn.firstSeen)+(x.sn.firstSeen===S.baseline?" (נקודת בסיס)":""), x.sn.firstSeen===S.baseline?"נקודת בסיס – לפני הסריקות היומיות.":"")
    + row("מיקום במפה", x.ex.geo==="exact"?"לפי כתובת":"משוער", x.ex.geo==="exact"?"לפי מאגר הכתובות של רשות המסים.":"לפי רחוב/מודעה, לא בניין מדויק.")
+   + (x.vw ? row("צפיות ביד2", `נצפתה ${nf(x.vw.v)} פעמים ב-${x.vw.d} ימים${x.vw.vpd!=null?" · כ-"+x.vw.vpd.toFixed(1)+" ביום":""}`, "מונה הצפיות שיד2 מציג בדף המודעה, נקרא בדפדפן ב-"+isoDmy(VW.asOf||"")+".") : "")
+   + (x.y2rm.length ? row("הוסרה מיד2", x.y2gone ? "כן – המודעה ביד2 הוסרה" : "העתק אחד ביד2 הוסר ("+x.y2rm.length+")", "נבדק בדפדפן ב-"+isoDmy(VW.asOf||"")+". הנכס לא נמחק מהאתר כדי שלא ייעלם בשקט.") : "")
+   + (x.pfix ? row("הערת מחיר", esc(x.pfix)) : "")
+   + (x.mot ? row("סימני מוכר לחוץ", x.mot.s.map(s=>`${esc(MOTL[s.t]||s.t)}: „${esc(s.e)}“`).join("<br>"), "רק טקסט ונתונים מהמודעה; ראו דף ירושה / לחוצים.") : "")
    + row("מקורות המודעה", x.l.map(y=>`<a href="${esc(y[1])}" target="_blank" rel="noopener noreferrer">${esc(y[0])} ↗</a>`).join(" · "));
   return `<details class="card vk-${x.vk}" id="${idp}${x.k}" data-id="${esc(x.id)}"${open?" open":""}><summary>
    <div class="c1"><span class="rank">#${x.k}</span><div class="addr">${esc(x.a)}<small>${esc(x.h)} · ${esc(x.c)}</small></div><a class="shr" href="${esc(waLink(x))}" target="_blank" rel="noopener noreferrer" aria-label="שיתוף ב-WhatsApp" title="שיתוף ב-WhatsApp">⤴</a><button type="button" class="star${isFav(x.id)?" on":""}" data-id="${esc(x.id)}" aria-label="הוספה למועדפים" aria-pressed="${isFav(x.id)}">${isFav(x.id)?"★":"☆"}</button><span class="score" title="ציון 1–10">${x.s.toFixed(1)}</span></div>
@@ -347,7 +366,7 @@ function metrics(el, items){
 
 /* ---------- explorer: shared filter model (city pages, pinui-binui, map) ---------- */
 const RNG = [["P",x=>x.p/1e6],["PP",x=>x.pp/1000],["Y",x=>x.yld],["D",x=>x.d],["RM",x=>x.rm],["Q",x=>x.q],["YB",x=>x.yb||null]];
-const F0 = {city:"all",area:"all",verd:"all",sort:"score",win:"all",grp:"all",ren:"all",rst:"all",fav:false,chg:"all",q:"",smin:"0"};
+const F0 = {city:"all",area:"all",verd:"all",sort:"score",win:"all",grp:"all",ren:"all",rst:"all",fav:false,mot:false,chg:"all",q:"",smin:"0"};
 RNG.forEach(r=>{ F0[r[0]+"min"]=""; F0[r[0]+"max"]=""; });
 const F = Object.assign({}, F0);
 const CTRL = {q:"q",fSort:"sort",fArea:"area",fCity:"city",fVerd:"verd",fWin:"win",fGrp:"grp",fChg:"chg",fRen:"ren",fRst:"rst",fSmin:"smin"};
@@ -375,6 +394,7 @@ function passF(x){
   if (F.verd!=="all" && x.vk!==F.verd) return false;
   if (!renOK(x, F.ren)) return false;
   if (F.fav && !isFav(x.id)) return false;
+  if (F.mot && !x.hot) return false;
   if (F.chg==="new" && !x.isNew) return false;
   if (F.chg==="drop" && !x.drop) return false;
   if (F.chg==="any" && !(x.isNew||x.drop)) return false;
@@ -402,6 +422,7 @@ function filtered(base){
 function fSync(){
   for (const id in CTRL){ const el=$(id); if (el) el.value = F[CTRL[id]]; }
   if ($("fFav")) $("fFav").checked = !!F.fav;
+  if ($("fMot")) { $("fMot").checked = !!F.mot; $("fMot").closest(".fchip").classList.toggle("on", !!F.mot); }
   fBadge();
 }
 function fBadge(){ const t=$("togf"); if (!t) return; const n=fActive(); t.innerHTML = "סינון מתקדם ⚙"+(n?` <span class="fcn" aria-label="${n} מסננים פעילים">${n}</span>`:""); t.classList.toggle("has", n>0); }
@@ -412,6 +433,7 @@ function bindFilters(render, extraReset){
     else el.addEventListener("change", e=>{ F[CTRL[id]]=e.target.value; if (id==="fCity" && $("fArea")){ F.area="all"; if (extraReset) extraReset(); } go(); });
   }
   if ($("fFav")) $("fFav").addEventListener("change", e=>{ F.fav=e.target.checked; go(); });
+  if ($("fMot")) $("fMot").addEventListener("change", e=>{ F.mot=e.target.checked; e.target.closest(".fchip").classList.toggle("on", F.mot); go(); });
   if ($("togf")) $("togf").addEventListener("click", ()=>{ const o=$("fbar").classList.toggle("open"); $("togf").setAttribute("aria-expanded",o); });
   if ($("openAll")) $("openAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.area, #groups details.card").forEach(d=>d.open=true));
   if ($("closeAll")) $("closeAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.card, #groups details.area").forEach(d=>d.open=false));
@@ -495,6 +517,52 @@ function pagePinui(){
     afterRender($("groups"));
   }
   bindFilters(render); render();
+}
+
+/* ---------- most viewed (Yad2 view counters) ---------- */
+function pageViews(){
+  const asOf = isoDmy(VW.asOf||""), withV = ITEMS.filter(x=>x.vw).sort((a,b)=>b.vw.v-a.vw.v || a.k-b.k);
+  const top = withV.slice(0,10), rest = withV.slice(10), gone = ITEMS.filter(x=>x.y2rm.length);
+  const nY = ITEMS.filter(x=>x.yids.length).length;
+  $("metrics").innerHTML = [[withV.length,"מודעות עם מונה צפיות"],[withV.length?nf(withV[0].vw.v):"—","הכי הרבה צפיות"],[withV.length?Math.max(...withV.map(x=>x.vw.vpd||0)).toFixed(1):"—","שיא צפיות ליום"],[(VW.checked||nY)+" / "+gone.filter(x=>x.y2gone).length,"מודעות יד2 שנבדקו / הוסרו"]].map(m=>`<div class="metric"><b>${m[0]}</b><span>${m[1]}</span></div>`).join("");
+  $("mvCnt").textContent = top.length;
+  $("mvNote").innerHTML = `מספרי הצפיות מיד2, נכון ל-${asOf}. רק מודעות יד2 שמציגות מונה צפיות (${withV.length} מתוך ${VW.checked||nY} מודעות יד2 שבאתר); למודעות מ-doortodoor, קומו והומלס אין מונה. מדורג לפי מספר הצפיות; לצידו הקצב (צפיות ביום). הרבה צפיות = עניין גבוה, לא בהכרח עסקה טובה.`;
+  const vrow = (x,i) => `<div class="vrow" id="vr${x.k}"><div class="vhead"><span class="vrank" aria-label="מקום ${i+1}">${i+1}</span><span class="vbig">👁 נצפתה ${nf(x.vw.v)} פעמים ב-${x.vw.d} ימים</span>${x.vw.vpd!=null?`<span class="vpd">≈ ${x.vw.vpd.toFixed(1)} צפיות ביום</span>`:""}<a class="vlk" href="https://www.yad2.co.il/realestate/item/tel-aviv-area/${encodeURIComponent(x.vw.yid)}" target="_blank" rel="noopener noreferrer">יד2 ↗</a></div>${card(x,false,"v")}</div>`;
+  $("mvCards").innerHTML = top.length ? top.map(vrow).join("") : `<div class="empty panel">אין נתוני צפיות.</div>`;
+  if (rest.length) $("mvRest").innerHTML = `<details class="area mvrest"><summary>שאר המודעות עם מונה צפיות<span class="cnt">${rest.length}</span></summary><div class="area-body"><div class="tw"><table class="t"><thead><tr><th>#</th><th>כתובת</th><th>מחיר</th><th>צפיות</th><th>ימים</th><th>ביום</th></tr></thead><tbody>${rest.map((x,i)=>`<tr><td>${i+11}</td><td><a href="${CITY_PAGE[x.c]}?id=${encodeURIComponent(x.id)}">${esc(x.a)}</a> · ${esc(x.h)}</td><td>${nf(x.p)} ₪</td><td>${nf(x.vw.v)}</td><td>${x.vw.d}</td><td>${x.vw.vpd!=null?x.vw.vpd.toFixed(1):"—"}</td></tr>`).join("")}</tbody></table></div></div></details>`;
+  $("rmCnt").textContent = gone.length;
+  $("rmNote").innerHTML = gone.length ? `מודעות באתר שבבדיקה ב-${asOf} כבר לא היו פעילות ביד2. הן לא נמחקו מהאתר, ומסומנות <span class="bdg gone">🚫 הוסרה מיד2</span> (או "יד2 (הוסרה)" בקישור, כשרק העתק אחד הוסר). אם יש להן העתק פעיל במקור אחר – הוא נשאר בכרטיס.` : "לא נמצאו מודעות שהוסרו.";
+  $("rmCards").innerHTML = gone.map(x=>card(x,false,"g")).join("");
+  afterRender(document);
+}
+
+/* ---------- motivated sellers (ירושה / מוכרים לחוצים) ---------- */
+function motBox(x, i){
+  const m = x.mot;
+  const li = m.s.map(s=>`<li><span class="mt t-${esc(s.t)}">${esc(MOTL[s.t]||s.t)}</span><q>${esc(s.e)}</q> <a href="${esc(s.u)}"${/^https?:/.test(s.u)?' target="_blank" rel="noopener noreferrer"':""}>${esc(s.src)}${/^https?:/.test(s.u)?" ↗":""}</a></li>`).join("");
+  return `<div class="mrow" id="mr${x.k}"><div class="mhead l${m.lvl}"><span class="vrank">${i+1}</span><b>סימן ${MOTLV[m.lvl]}</b><span class="mtags">${[...new Set(m.s.map(s=>MOTL[s.t]||s.t))].map(t=>`<span class="mtag">${esc(t)}</span>`).join("")}</span></div><ul class="mev">${li}</ul>${card(x,false,"m")}</div>`;
+}
+function pageMot(){
+  const all = ITEMS.filter(x=>x.mot).sort((a,b)=>b.mot.sc-a.mot.sc || b.s-a.s || a.k-b.k);
+  const L = l => all.filter(x=>x.mot.lvl===l);
+  const cov = MOT.cov||{}, nT = ITEMS.filter(x=>cov[x.id]&&cov[x.id][0]).length, nY = ITEMS.filter(x=>cov[x.id]&&cov[x.id][1]).length, nYall = ITEMS.filter(x=>x.yids.length).length;
+  $("metrics").innerHTML = [[L(3).length,"סימן חזק (ירושה / ירידת מחיר / מוטיבציה)"],[L(2).length,"סימן בינוני (מו״מ / ‚מתחת לשוק‘)"],[L(1).length,"סימן חלש (‚הזדמנות‘ בלבד)"],[nT+" / "+ITEMS.length,"נכסים עם טקסט מודעה שנקרא"]].map(m=>`<div class="metric"><b>${m[0]}</b><span>${m[1]}</span></div>`).join("");
+  const found = new Set(all.flatMap(x=>x.mot.s.map(s=>s.t)));
+  const none = ["urgent","abroad","divorce","recv"].filter(t=>!found.has(t)).map(t=>MOTL[t]);
+  $("motInfo").innerHTML = `<p class="lead" style="margin:0">כל סימן מוצג עם הציטוט המדויק מהמודעה והקישור למקור – שום סימן לא מוסק. טקסט מלא נקרא ל-${nT} מתוך ${ITEMS.length} נכסים; ל-${nY} הנכסים שיש להם מודעה ביד2 נקראו רק נתוני הכרטיס, ולכן ייתכן שיש עוד מוכרים לחוצים שלא זוהו.${none.length?" לא נמצאה אף מודעה עם: "+esc(none.join(", "))+".":""}</p>
+   <details class="mmeth"><summary>שיטה ומגבלות</summary><ul class="mnote">
+   <li><b>מה חיפשנו:</b> ביטויים בטקסט המודעה עצמה – ירושה / עיזבון / יורשים, חייב למכור, מכירה דחופה, עזיבת הארץ, גירושין / פירוק שיתוף, כינוס נכסים, "מוטיבציית מכירה", פתוח למו״מ / גמיש במחיר, "מתחת למחיר השוק" / "מחיר מציאה", "הזדמנות"; ובנתוני כרטיס יד2 – הסכום שיד2 מציג ב"המחיר ירד ב-" ותגית המפרסם "בהזדמנות".</li>
+   <li><b>כיסוי:</b> טקסט מודעה מלא – ${nT} מתוך ${ITEMS.length} נכסים (doortodoor, הומלס, וטקסט יד2 שצוטט בדוח מחקר). ל-${nY} מתוך ${nYall} הנכסים שיש להם מודעה ביד2 נקראו נתוני הכרטיס בלבד – לא הטקסט המלא (יד2 חוסם קריאה אוטומטית).</li>
+   <li><b>ירידות מחיר:</b> נספרות רק כשהמחיר ביד2 אחרי הירידה הוא המחיר של הנכס באתר. הפרש מחיר בין העתקים של אותה מודעה (דרך שלמה 94, יצחק שדה 64, לבנדה 20) <b>אינו</b> ירידת מחיר, ותגית "ירידת מחיר" הוסרה מהם. יד2 לא מציג את תאריך הירידה.</li>
+   <li><b>זהירות:</b> רוב ‚הזדמנות‘ / ‚מציאה‘ הם ניסוחי שיווק של מתווכים – סימן חלש בלבד. בדירת ירושה – לבדוק צו ירושה רשום והסכמת כל היורשים.</li></ul></details>`;
+  const sec = (l, ic, t, sub, wrap) => { const a = L(l); if (!a.length) return "";
+    const body = a.map((x,i)=>motBox(x,i)).join("");
+    return wrap ? `<h3 class="ren-h"><i aria-hidden="true">${ic}</i>${t} <span class="cnt">${a.length}</span></h3><details class="area mtier"><summary><span class="cn">${t}<small>${sub}</small></span><span class="cnt">${a.length} נכסים</span></summary><div class="area-body">${body}</div></details>`
+                : `<h3 class="ren-h"><i aria-hidden="true">${ic}</i>${t} <span class="cnt">${a.length}</span></h3><p class="lead">${sub}</p><div class="cards">${body}</div>`; };
+  $("motGroups").innerHTML = (sec(3,"🔥","סימן חזק","ירושה, ירידת מחיר ביד2, או המוכר כותב במפורש על מוטיבציית מכירה. ממוין מהסימן החזק לחלש.")
+    + sec(2,"💬","סימן בינוני","פתוח למו״מ, או שהמפרסם טוען למחיר מתחת לשוק / ‚מחיר מציאה‘.")
+    + sec(1,"·","סימן חלש – ‚הזדמנות‘ בלבד","המפרסם סימן ‚בהזדמנות‘ ביד2 או כתב ‚הזדמנות‘ – ניסוח שיווקי נפוץ, לא הוכחה ללחץ.", true)) || `<div class="empty panel">לא נמצאו מודעות עם סימנים למוכר לחוץ.</div>`;
+  afterRender(document);
 }
 
 /* ---------- home ---------- */
@@ -801,17 +869,18 @@ function initLook(){
 function boot(){
   initLook();
   const pg = document.body.dataset.page;
-  const f = {home:pageHome, city:pageCity, ren:pagePinui, map:pageMap, favs:pageFavs, method:pageMethod}[pg];
+  const f = {home:pageHome, city:pageCity, ren:pagePinui, map:pageMap, favs:pageFavs, method:pageMethod, views:pageViews, mot:pageMot}[pg];
   if (f) f();
   if (pg!=="city" && pg!=="map" && pg!=="ren" && (pg==="favs" || document.querySelector("details.card"))){
     const bar=document.createElement("div"); bar.className="cardtools";
     bar.innerHTML='<button class="btn sec" id="cardsOpen" type="button">פתח הכול</button><button class="btn sec" id="cardsClose" type="button">סגור הכול</button><span class="mut">הכרטיסים סגורים כברירת מחדל – לחצו על כרטיס לפירוט מלא</span>';
     if (pg==="home" && $("topCards")) $("topCards").parentNode.insertBefore(bar,$("topCards")); else { const main=document.querySelector("main"); main.insertBefore(bar, main.firstChild); }
-    const all=()=>document.querySelectorAll("main details.card, main details.rpt");
+    const all=()=>document.querySelectorAll("main details.card, main details.rpt, main details.mtier, main details.mvrest");
     $("cardsOpen").addEventListener("click",()=>all().forEach(d=>d.open=true));
     $("cardsClose").addEventListener("click",()=>all().forEach(d=>d.open=false));
   }
   updateFavUI();
+  const cur = document.querySelector("nav.toc a.cur"); if (cur && cur.parentNode.scrollWidth > cur.parentNode.clientWidth) { const w = cur.parentNode; w.scrollLeft = 0; const r = cur.getBoundingClientRect(), wr = w.getBoundingClientRect(); if (r.left < wr.left || r.right > wr.right) w.scrollLeft += (r.left - wr.left) - (wr.width - r.width)/2; }
   document.querySelectorAll("[data-gen]").forEach(e=>e.textContent=isoDmy(S.generatedAt));
 }
 if (document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot); else boot();

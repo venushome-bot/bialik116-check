@@ -160,15 +160,6 @@ function waLink(x){
   const t = x.a+", "+x.h+" ("+x.c+") – "+nf(x.p)+" ₪"+(x.rm!=null?" · "+x.rm+" חד׳":"")+" · "+x.q+" מ״ר\n"+x.u;
   return "https://wa.me/?text="+encodeURIComponent(t);
 }
-function yieldRows(x){
-  let r = "";
-  if (x.x==="BIALIK") r += `<div><b>שכירות משוערת / תשואה ברוטו</b>כ-5,200 ₪ לחודש · כ-3.1% ${tag("הערכה")}<span class="sub">מתוך הבדיקה המלאה לביאליק 116 (<a href="favorites.html#rpt-yp9s9woxr">📄 דוח מחקר</a>).</span></div>`;
-  else if (x.rent) r += `<div><b>שכירות משוערת (שכונה/סביבה)</b>${nf(x.rent.med)} ₪ לחודש ${tag("הערכה")}<span class="sub">חציון ${x.rent.n} מודעות שכירות דומות (±0.5 חדר, 70%–140% מהשטח) ברדיוס ${x.rent.R} מ׳ · טווח אמצעי ${nf(x.rent.lo)}–${nf(x.rent.hi)} · מקור: doortodoor, נסרק ${isoDmy(S.generatedAt)}. שכר מבוקש ולא חוזה.</span></div>
-   <div><b>תשואה ברוטו משוערת</b>${x.yld.toFixed(1)}% ${tag("הערכה")}<span class="sub">שכירות שנתית ÷ מחיר מבוקש, לפני ארנונה, ועד, תחזוקה, מיסים ותקופות ריקות.</span></div>`;
-  else r += `<div><b>שכירות / תשואה באזור</b>אין נתון<span class="sub">פחות מ-5 מודעות שכירות דומות ברדיוס 1,200 מ׳ במאגר שנסרק.</span></div>`;
-  if (x.cbs) r += `<div><b>בדיקת סבירות – ממוצע עירוני (הלמ״ס)</b>${nf(x.cbs)} ₪ לחודש → ${x.yldC.toFixed(1)}% ${tag("הערכה")}<span class="sub">ממוצע שכר דירה ${esc(x.c)} לטווח חדרים ${esc(bandOf(x.rm))}, מחצית 1 של 2026, כפי שפורסם ב-ynet מנתוני הלמ״ס. ממוצע עירוני כולל חוזים ישנים, לא ספציפי לשכונה.</span></div>`;
-  return r;
-}
 function renBadge(x){
   const c = x.ci>=0 ? CMP[x.ci] : null, stt = c ? (c[4]===1?"מאושר":"בתכנון") : "";
   let t, k;
@@ -183,6 +174,7 @@ function renBadge(x){
 }
 function badgesHtml(x){
   let b = renBadge(x);
+  if (!x.di) b += `<span class="bdg nod" title="למודעה אין תאריך פרסום ידוע – לא ניתן לאמת שפורסמה ב-${S.RAW.DR.win_months||4} החודשים האחרונים">⚠ תאריך לא מאומת</span>`;
   if (x.isNew) b += `<span class="bdg new">חדש · ${isoDmy(x.sn.firstSeen)}</span>`;
   if (x.drop) b += `<span class="bdg drop">ירידת מחיר ${x.drop}%</span>`;
   b += `<span class="bdg fav" data-favb="${esc(x.id)}" style="display:${isFav(x.id)?"inline":"none"}">★ במועדפים</span>`;
@@ -194,14 +186,68 @@ function meterHtml(x){
   const rd = x.rd2!=null && x.rd2>=0 ? `<b style="inset-inline-start:${sc(x.rd2).toFixed(1)}%" title="ריאלית (נטו) ${x.rd2}%"></b>` : "";
   return `<div class="meter${x.d>=15?"":" low"}" role="img" aria-label="הנחה ${x.d}% מול השוק${x.rd2!=null?", ריאלית (נטו) "+x.rd2+"%":""}"><i style="width:${sc(x.d).toFixed(1)}%"></i>${rd}</div><div class="meter-l" aria-hidden="true"><span>0%</span><span>הנחה מול השוק (הסימון = ריאלית)</span><span>40%+</span></div>`;
 }
+const info = t => t ? `<details class="nfo"><summary aria-label="פרטים נוספים" title="פרטים נוספים">i</summary><div class="nt">${t}</div></details>` : "";
+const row = (k,v,n) => `<div class="r"><dt>${k}</dt><dd><span class="vv">${v}</span>${info(n)}</dd></div>`;
+function yieldRows(x){
+  let r = "";
+  if (x.x==="BIALIK") r += row("שכירות משוערת / תשואה ברוטו",`כ-5,200 ₪ לחודש · כ-3.1% ${tag("הערכה")}`,`מתוך הבדיקה המלאה לביאליק 116 (<a href="favorites.html#rpt-yp9s9woxr">📄 דוח מחקר</a>).`);
+  else if (x.rent) r += row("שכירות משוערת (שכונה/סביבה)",`${nf(x.rent.med)} ₪ לחודש ${tag("הערכה")}`,`חציון ${x.rent.n} מודעות שכירות דומות (±0.5 חדר, 70%–140% מהשטח) ברדיוס ${x.rent.R} מ׳ · טווח אמצעי ${nf(x.rent.lo)}–${nf(x.rent.hi)} · מקור: doortodoor, נסרק ${isoDmy(S.generatedAt)}. שכר מבוקש ולא חוזה.`)
+   + row("תשואה ברוטו משוערת",`${x.yld.toFixed(1)}% ${tag("הערכה")}`,"שכירות שנתית ÷ מחיר מבוקש, לפני ארנונה, ועד, תחזוקה, מיסים ותקופות ריקות.");
+  else r += row("שכירות / תשואה באזור","אין נתון","פחות מ-5 מודעות שכירות דומות ברדיוס 1,200 מ׳ במאגר שנסרק.");
+  if (x.cbs) r += row("בדיקת סבירות – ממוצע עירוני (הלמ״ס)",`${nf(x.cbs)} ₪ לחודש → ${x.yldC.toFixed(1)}% ${tag("הערכה")}`,`ממוצע שכר דירה ${esc(x.c)} לטווח חדרים ${esc(bandOf(x.rm))}, מחצית 1 של 2026, כפי שפורסם ב-ynet מנתוני הלמ״ס. ממוצע עירוני כולל חוזים ישנים, לא ספציפי לשכונה.`);
+  return r;
+}
+function rvShort(x){
+  const rv = x.ex.rv;
+  if (x.c==="רמת גן") return "אין מקור ממוחשב ברמת הבניין (רמת גן)";
+  if (!rv || rv.na) return "אין מספר בית – לא אומת";
+  if (rv.err) return "הבדיקה נכשלה – לא אומת";
+  if (rv.t38) return "✔ נמצאה בקשת/היתר תמ״א 38 בכתובת";
+  if (rv.n) return rv.n+" בקשות/היתרים, ללא תמ״א 38";
+  return "לא נמצאה בקשה בכתובת"+(rv.nearT?" · "+rv.nearT+" בקשות תמ״א 38 ברדיוס 80 מ׳":"");
+}
+function renShort(x){
+  const c = x.ci>=0 ? CMP[x.ci] : null, stt = c ? (c[4]===1?"מאושר":"בתכנון") : "";
+  if (x.ex && x.ex.rv && x.ex.rv.t38) return ["תמ״א 38","בקשה בכתובת","yes"];
+  if (x.ut===1) return ["אין","בניין חדש","no"];
+  if (c && x.rw && x.rd===0) return ["פינוי־בינוי","בתוך מתחם · "+stt,"yes"];
+  if (c && x.rw) return ["ליד מתחם",x.rd+" מ׳ · "+stt,"maybe"];
+  if (c && x.rd<=500) return ["רחוק",x.rd+" מ׳ ממתחם","no"];
+  return ["אין ידוע","","no"];
+}
+const kpi = (lab,val,sub,cls) => `<div class="kpi${cls?" "+cls:""}"><span class="kl">${lab}</span><b>${val}</b>${sub?`<span class="ks">${sub}</span>`:""}</div>`;
+const dcl = v => v==null ? "na" : v>=15 ? "good" : v>=5 ? "mid" : "bad";
 function card(x, open, idp){
   const parts = writeup(x);
   const dcls = x.d>=15 ? "disc" : "disc low";
   const rcls = x.rd2!=null && x.rd2>=15 ? "disc" : "disc low";
   const pp = x.am ? nf(x.pp)+" ₪/מ״ר · חציון אזור (ישן) "+nf(x.am) : nf(x.pp)+" ₪/מ״ר";
-  const links = x.l.map((y,j)=>`<a class="${j?"o":""}" href="${esc(y[1])}" target="_blank" rel="noopener noreferrer">${esc(y[0])} ↗</a>`).join("");
+  const links = x.l.map((y,j)=>`<a class="btn ${j?"sec ":""}lk" href="${esc(y[1])}" target="_blank" rel="noopener noreferrer">${j?"":"🔗 "}${esc(y[0])} ↗</a>`).join("");
   const note = (FAV[x.id]&&FAV[x.id].note)||"";
   const nettag = x.netk==="listing" ? tag("מהמודעה","fact") : tag("הערכה ×0.85");
+  const rnS = renShort(x);
+  const kp = kpi("מחיר ₪", nf(x.p), (x.rm==null?"—":x.rm)+" חד׳ · "+nf(x.q)+" מ״ר")
+   + kpi("₪ למ״ר", nf(x.pp), x.am?"באזור*: "+nf(x.am):"אין נתון אזורי", x.am?(x.pp<=x.am?"good":"bad"):"")
+   + kpi("הנחה ריאלית*", (x.rd2==null?"—":x.rd2+"%"), "מול השוק", "dk "+dcl(x.rd2))
+   + kpi("תשואה ברוטו*", x.yld!=null ? x.yld.toFixed(1)+"%" : (x.x==="BIALIK"?"3.1%":"—"), x.rent?nf(x.rent.med)+" ₪ לחודש":(x.x==="BIALIK"?"5,200 ₪ לחודש":"אין נתון שכירות"))
+   + kpi("שנת בנייה", x.yb ? String(x.yb) : (x.age===0?"חדש":x.age===1?"ישן":"—"), x.yb ? (x.age===0?"בניין חדש":x.age===1?"בניין ישן":"") : "שנה לא ידועה")
+   + kpi("התחדשות", rnS[0], rnS[1], "rn "+rnS[2]);
+  const sec = (ic,t,body,cls) => `<section class="cs${cls?" "+cls:""}"><h4><i aria-hidden="true">${ic}</i>${t}</h4><dl>${body}</dl></section>`;
+  const sMarket = row("מחיר / שטח (ברוטו לפי מודעה)",`${nf(x.p)} ₪ · ${nf(x.q)} מ״ר · ${x.rm==null?"—":x.rm} חד׳ · קומה ${esc(x.f||"—")}`)
+   + row("שטח נטו",`${nf(x.net)} מ״ר ${nettag}`, x.netk==="listing"?"מצוין במודעה כנטו.":esc(x.ex.netnote||"לא מצוין נטו במודעה – הערכה שמרנית: ברוטו × 0.85."))
+   + row("מחיר למ״ר: ברוטו / נטו",`${nf(x.pp)} / ${nf(x.ppn)} ₪ ${nettag}`)
+   + row("טיפוסי באזור (בניינים ישנים)", x.am?nf(x.am)+" ₪/מ״ר ("+x.an+" עסקאות)":"אין מספיק עסקאות","חציון עסקאות רשות המסים 2024–26 בבניינים ישנים באזור.")
+   + row("שווי משוער",`${nf(x.e)} ₪ (${nf(x.ep)} ₪/מ״ר) ${tag("הערכה")}`)
+   + row("הנחה מול השוק – כפי שמוצג",`<span class="${dcls}">${x.d}%</span>`,"טווח ריאלי לפי פער ברוטו/רשום: "+esc(x.dr))
+   + row("הנחה ריאלית – שמרני (נטו)",`<span class="${rcls}">${x.rd2}%</span> ${tag(x.netk==="listing"?"נטו מהמודעה":"הערכה")}`,"1 − (מחיר ÷ שטח נטו) ÷ ₪/מ״ר שווי משוער. מניח ששטח עסקאות רשות המסים הוא נטו – התרחיש הקשה; האמת בין המוצג לכאן."+(x.rd2<15?" מתחת לסף 15%.":""))
+   + row("ציון",`<b>${x.s.toFixed(1)}</b> / 10`,`פירוק: הנחה ${x.sc[0]} · התחדשות ${x.sc[1]} · אימות ${x.sc[2]} · טריות ${x.sc[3]}`);
+  const sBld = row("גיל בניין",`${x.age===0?"חדש":x.age===1?"ישן":"לא ידוע"}${x.yb?" · נבנה "+x.yb:""}`)
+   + row("התחדשות (לפי מתחמים)",`${esc(ren(x))}${x.rn?" · "+esc(x.rn.match(/\(.*\)/)?x.rn.match(/\(.*\)/)[0]:""):""} ${tag("הערכה")}`, esc(upside(x)))
+   + row("אימות ברמת הבניין", esc(rvShort(x)), esc(rvText(x)));
+  const sSrc = row("תאריך פרסום", x.dt?esc(x.dt):"אין תאריך – ביטחון נמוך", x.dt?"מקור התאריך: "+esc(x.dk):"")
+   + row("נראתה לראשונה באתר", isoDmy(x.sn.firstSeen)+(x.sn.firstSeen===S.baseline?" (נקודת בסיס)":""), x.sn.firstSeen===S.baseline?"נקודת בסיס – לפני הסריקות היומיות.":"")
+   + row("מיקום במפה", x.ex.geo==="exact"?"לפי כתובת":"משוער", x.ex.geo==="exact"?"לפי מאגר הכתובות של רשות המסים.":"לפי רחוב/מודעה, לא בניין מדויק.")
+   + row("מקורות המודעה", x.l.map(y=>`<a href="${esc(y[1])}" target="_blank" rel="noopener noreferrer">${esc(y[0])} ↗</a>`).join(" · "));
   return `<details class="card vk-${x.vk}" id="${idp}${x.k}" data-id="${esc(x.id)}"${open?" open":""}><summary>
    <div class="c1"><span class="rank">#${x.k}</span><div class="addr">${esc(x.a)}<small>${esc(x.h)} · ${esc(x.c)}</small></div><a class="shr" href="${esc(waLink(x))}" target="_blank" rel="noopener noreferrer" aria-label="שיתוף ב-WhatsApp" title="שיתוף ב-WhatsApp">⤴</a><button type="button" class="star${isFav(x.id)?" on":""}" data-id="${esc(x.id)}" aria-label="הוספה למועדפים" aria-pressed="${isFav(x.id)}">${isFav(x.id)?"★":"☆"}</button><span class="score" title="ציון 1–10">${x.s.toFixed(1)}</span></div>
    <div class="c2"><span class="price">${nf(x.p)} ₪</span><span class="chip">${x.rm==null?"—":x.rm} חד׳</span><span class="chip">${nf(x.q)} מ״ר</span>${x.f?`<span class="chip">קומה ${esc(x.f)}</span>`:""}${x.yld!=null?`<span class="chip" title="הערכה">תשואה ~${x.yld.toFixed(1)}%</span>`:""}<span class="v ${x.vk}">${VL[x.vk]}</span></div>
@@ -209,30 +255,22 @@ function card(x, open, idp){
    ${meterHtml(x)}
    <div class="c3"><span>${esc(pp)} · <span class="${dcls}">הנחה ${x.d}%</span> · <span class="${rcls}" title="שמרני, לפי שטח נטו משוער">ריאלית (נטו) ${x.rd2}%</span></span><span class="chev"></span></div>
   </summary><div class="cbody">
-   <div class="tools"><button class="btn sec star-b" type="button" data-id="${esc(x.id)}">${isFav(x.id)?"★ הסרה ממועדפים":"☆ הוספה למועדפים"}</button><a class="btn wa" href="${esc(waLink(x))}" target="_blank" rel="noopener noreferrer">שיתוף ב-WhatsApp</a></div>
-   <div class="kv">
-    <div><b>מחיר / שטח (ברוטו לפי מודעה)</b>${nf(x.p)} ₪ · ${nf(x.q)} מ״ר · ${x.rm==null?"—":x.rm} חד׳ · קומה ${esc(x.f||"—")}</div>
-    <div><b>שטח נטו</b>${nf(x.net)} מ״ר ${nettag}<span class="sub">${x.netk==="listing"?"מצוין במודעה כנטו.":esc(x.ex.netnote||"לא מצוין נטו במודעה – הערכה שמרנית: ברוטו × 0.85.")}</span></div>
-    <div><b>מחיר למ״ר: ברוטו / נטו</b>${nf(x.pp)} / ${nf(x.ppn)} ₪ ${nettag}</div>
-    <div><b>מחיר למ״ר טיפוסי באזור (בניינים ישנים, עסקאות 2024–26)</b>${x.am?nf(x.am)+" ₪/מ״ר ("+x.an+" עסקאות)":"אין מספיק עסקאות"}</div>
-    <div><b>שווי משוער (הערכה)</b>${nf(x.e)} ₪ (${nf(x.ep)} ₪/מ״ר)</div>
-    <div><b>הנחה מול השוק – כפי שמוצג</b>${x.d}% · טווח ריאלי לפי פער ברוטו/רשום: ${esc(x.dr)}</div>
-    <div><b>הנחה ריאלית – תרחיש שמרני (לפי נטו)</b>${x.rd2}% ${tag(x.netk==="listing"?"נטו מהמודעה":"הערכה")}<span class="sub">1 − (מחיר ÷ שטח נטו) ÷ ₪/מ״ר שווי משוער. מניח ששטח עסקאות רשות המסים הוא נטו – התרחיש הקשה; האמת בין המוצג לכאן.${x.rd2<15?" מתחת לסף 15%.":""}</span></div>
-    ${yieldRows(x)}
-    <div><b>ציון (פירוק)</b>${x.s.toFixed(1)}: הנחה ${x.sc[0]} · התחדשות ${x.sc[1]} · אימות ${x.sc[2]} · טריות ${x.sc[3]}</div>
-    <div><b>תאריך פרסום</b>${x.dt?esc(x.dt)+" · "+esc(x.dk):"אין תאריך – קבוצת ביטחון נמוך"}</div>
-    <div><b>נראתה לראשונה באתר</b>${isoDmy(x.sn.firstSeen)}${x.sn.firstSeen===S.baseline?" (נקודת בסיס – לפני הסריקות היומיות)":""}</div>
-    <div><b>גיל בניין</b>${x.age===0?"חדש":x.age===1?"ישן":"לא ידוע"}${x.yb?" · נבנה "+x.yb:""}</div>
-    <div><b>התחדשות עירונית (הערכה לפי מתחמים)</b>${esc(ren(x))}${x.rn?" · "+esc(x.rn.match(/\(.*\)/)?x.rn.match(/\(.*\)/)[0]:""):""}</div>
-    <div><b>אימות התחדשות ברמת הבניין</b>${esc(rvText(x))}</div>
-    <div><b>מיקום במפה</b>${x.ex.geo==="exact"?"לפי כתובת (מאגר כתובות רשות המסים)":"משוער – לפי רחוב/מודעה, לא בניין מדויק"}</div>
+   <div class="kpis k6">${kp}</div>
+   <div class="vline"><span class="v ${x.vk}">${VL[x.vk]}</span><span class="vt">${esc(x.vt)}</span></div>
+   <div class="tools act">${links}<button class="btn sec star-b" type="button" data-id="${esc(x.id)}">${isFav(x.id)?"★ הסרה ממועדפים":"☆ הוספה למועדפים"}</button><a class="btn wa" href="${esc(waLink(x))}" target="_blank" rel="noopener noreferrer">WhatsApp</a>${x.ex.lat?`<a class="btn sec" href="map.html?id=${encodeURIComponent(x.id)}">🗺 במפה</a>`:""}</div>
+   <p class="fn">* הערכה – לפי עסקאות רשות המסים ומודעות שכירות; הפירוט ב"פרטים מלאים".</p>
+   <details class="full"><summary>פרטים מלאים</summary><div class="fullb">
+   <div class="ana verdict-wrap ${x.vk}"><div class="verdict ${x.vk}">פסק דין – ${VL[x.vk]}: ${esc(x.vt)}</div>
+    ${parts.map(p=>`<p><strong class="h">${esc(p[0])}:</strong>${esc(p[1].replace(new RegExp("^"+p[0]+": ?"),""))}</p>`).join("")}</div>
+   <div class="secs">
+    ${sec("💰","מחיר ושוק",sMarket)}
+    ${sec("📈","שכירות ותשואה",yieldRows(x))}
+    ${sec("🏗","בניין והתחדשות",sBld)}
+    ${sec("🗓","מקור ותאריכים",sSrc+(sparkHtml(x)?`<div class="r sp">${sparkHtml(x)}</div>`:""))}
    </div>
-   ${sparkHtml(x)}
-   ${parts.map(p=>`<p><strong class="h">${esc(p[0])}:</strong>${esc(p[1].replace(new RegExp("^"+p[0]+": ?"),""))}</p>`).join("")}
-   <div class="verdict ${x.vk}">פסק דין – ${VL[x.vk]}: ${esc(x.vt)}</div>
-   ${mortHtml(x)}
-   <div><label style="font-size:12.5px;color:var(--mut)" for="note-${esc(idp)}${x.k}">הערה אישית (נשמרת בדפדפן בלבד)</label><textarea class="note" id="note-${esc(idp)}${x.k}" data-id="${esc(x.id)}" placeholder="הערות, שאלות למוכר, תזכורת…">${esc(note)}</textarea></div>
-   <div class="links"><b style="font-size:13px;color:var(--mut)">קישורים למודעה:</b><br>${links}</div>
+   <div class="ctools">${mortHtml(x)}
+   <div class="nbox"><label for="note-${esc(idp)}${x.k}">📝 הערה אישית (נשמרת בדפדפן בלבד)</label><textarea class="note" id="note-${esc(idp)}${x.k}" data-id="${esc(x.id)}" placeholder="הערות, שאלות למוכר, תזכורת…">${esc(note)}</textarea></div></div>
+   </div></details>
   </div></details>`;
 }
 const cardsHtml = (arr, nOpen, idp) => arr.length ? arr.map(x=>card(x,false,idp)).join("") : `<div class="empty">אין נכסים</div>`;
@@ -307,47 +345,84 @@ function metrics(el, items){
   el.innerHTML = [[items.length,"נכסים מדורגים"],[cs("תל אביב")+" / "+cs("רמת גן"),"תל אביב / רמת גן"],[nBuy,"פסק דין: שווה לקנות"],[nRen,"בתוך או ליד מתחם התחדשות"],[nNew+" / "+nDrop,"חדשים / ירידות מחיר"]].map(m=>`<div class="metric"><b>${m[0]}</b><span>${m[1]}</span></div>`).join("");
 }
 
-/* ---------- explorer (city pages) ---------- */
-const F = {area:"all",verd:"all",price:"5000000",rooms:"all",sort:"score",disc:"0",win:"all",grp:"all",ren:"all",fav:false,chg:"all",q:""};
-let EXP_CITY = null;
-function filtered(){
-  const maxP = Number(F.price), md_ = Number(F.disc), q = F.q.trim();
-  const r = ITEMS.filter(x=>{
-    if (x.c!==EXP_CITY) return false;
-    if (F.area!=="all" && x.h!==F.area) return false;
-    if (F.grp!=="all" && x.g!==F.grp) return false;
-    if (F.verd!=="all" && x.vk!==F.verd) return false;
-    if (x.d<md_ || x.p>maxP) return false;
-    if (F.ren!=="all"){
-      const near = x.rw, cin = x.ci>=0 && x.rd===0, c = x.ci>=0 ? CMP[x.ci] : null;
-      if (F.ren==="any" && !near) return false;
-      if (F.ren==="in" && !cin) return false;
-      if (F.ren==="appr" && !(near && c && c[4]===1)) return false;
-      if (F.ren==="plan" && !(near && c && c[4]!==1)) return false;
-      if (F.ren==="t38" && !(x.ex && x.ex.rv && x.ex.rv.t38)) return false;
-    }
-    if (F.fav && !isFav(x.id)) return false;
-    if (F.chg==="new" && !x.isNew) return false;
-    if (F.chg==="drop" && !x.drop) return false;
-    if (F.chg==="any" && !(x.isNew||x.drop)) return false;
-    const rm = x.rm==null?0:x.rm;
-    if (F.rooms==="2" && rm>2.5) return false;
-    if (F.rooms==="3" && (rm<3||rm>3.5)) return false;
-    if (F.rooms==="4" && (rm<4||rm>4.5)) return false;
-    if (F.rooms==="5" && rm<5) return false;
-    if (F.win!=="all"){
-      if (F.win==="none"){ if(x.di!=="") return false; }
-      else { if(x.di==="") return false; const days=(TODAY-new Date(x.di+"T12:00:00").getTime())/86400000; if(days>Number(F.win)) return false; }
-    }
-    if (q!=="" && !(x.a+" "+x.h).includes(q)) return false;
-    return true;
-  });
-  const key = {score:x=>-x.s*1000+x.k,disc:x=>-x.d,rd2:x=>-(x.rd2==null?-999:x.rd2),yld:x=>-(x.yld==null?-1:x.yld),price:x=>x.p,pp:x=>x.pp,date:x=>x.di===""?0:-Number(x.di.replace(/-/g,""))};
-  return [...r].sort((a,b)=>key[F.sort](a)-key[F.sort](b));
+/* ---------- explorer: shared filter model (city pages, pinui-binui, map) ---------- */
+const RNG = [["P",x=>x.p/1e6],["PP",x=>x.pp/1000],["Y",x=>x.yld],["D",x=>x.d],["RM",x=>x.rm],["Q",x=>x.q],["YB",x=>x.yb||null]];
+const F0 = {city:"all",area:"all",verd:"all",sort:"score",win:"all",grp:"all",ren:"all",rst:"all",fav:false,chg:"all",q:"",smin:"0"};
+RNG.forEach(r=>{ F0[r[0]+"min"]=""; F0[r[0]+"max"]=""; });
+const F = Object.assign({}, F0);
+const CTRL = {q:"q",fSort:"sort",fArea:"area",fCity:"city",fVerd:"verd",fWin:"win",fGrp:"grp",fChg:"chg",fRen:"ren",fRst:"rst",fSmin:"smin"};
+RNG.forEach(r=>{ CTRL["f"+r[0]+"min"]=r[0]+"min"; CTRL["f"+r[0]+"max"]=r[0]+"max"; });
+let EXP_CITY = null, FSCOPE = "x";
+const fKey = () => "rs_flt_v2_"+FSCOPE;
+function fLoad(){ try { const o=JSON.parse(localStorage.getItem(fKey())||"{}"); for (const k in o) if (k in F0) F[k]=o[k]; } catch(e){} }
+function fSave(){ try { const o={}; for (const k in F0) if (F[k]!==F0[k]) o[k]=F[k]; localStorage.setItem(fKey(), JSON.stringify(o)); } catch(e){} }
+function fReset(){ Object.assign(F, F0); fSave(); }
+function fActive(){ let n=0; for (const k in F0) if (k!=="sort" && k!=="q" && F[k]!==F0[k]) n++; return n; }
+function renOK(x, v){
+  if (v==="all") return true;
+  const near = x.rw, cin = x.ci>=0 && x.rd===0, c = x.ci>=0 ? CMP[x.ci] : null;
+  if (v==="any") return near; if (v==="in") return cin;
+  if (v==="appr") return !!(near && c && c[4]===1);
+  if (v==="plan") return !!(near && c && c[4]!==1);
+  if (v==="t38") return !!(x.ex && x.ex.rv && x.ex.rv.t38);
+  return true;
+}
+function passF(x){
+  if (EXP_CITY && x.c!==EXP_CITY) return false;
+  if (F.city!=="all" && x.c!==F.city) return false;
+  if (F.area!=="all" && x.h!==F.area) return false;
+  if (F.grp!=="all" && x.g!==F.grp) return false;
+  if (F.verd!=="all" && x.vk!==F.verd) return false;
+  if (!renOK(x, F.ren)) return false;
+  if (F.fav && !isFav(x.id)) return false;
+  if (F.chg==="new" && !x.isNew) return false;
+  if (F.chg==="drop" && !x.drop) return false;
+  if (F.chg==="any" && !(x.isNew||x.drop)) return false;
+  if (+F.smin>0 && x.s < +F.smin) return false;
+  for (const [K,get] of RNG){
+    const mn=F[K+"min"], mx=F[K+"max"];
+    if (mn==="" && mx==="") continue;
+    const v = get(x); if (v==null || isNaN(v)) return false;   // no value -> excluded only when this range is set
+    if (mn!=="" && v < +mn - 1e-9) return false;
+    if (mx!=="" && v > +mx + 1e-9) return false;
+  }
+  if (F.win!=="all"){
+    if (F.win==="none"){ if(x.di!=="") return false; }
+    else { if(x.di==="") return false; const days=(TODAY-new Date(x.di+"T12:00:00").getTime())/86400000; if(days>Number(F.win)) return false; }
+  }
+  const q = F.q.trim(); if (q!=="" && !(x.a+" "+x.h+" "+x.c).includes(q)) return false;
+  return true;
+}
+const SORTK = {score:x=>-x.s*1000+x.k,price:x=>x.p,price_d:x=>-x.p,pp:x=>x.pp,yld:x=>-(x.yld==null?-1:x.yld),disc:x=>-x.d,rd2:x=>-(x.rd2==null?-999:x.rd2),size:x=>-x.q,date:x=>x.di===""?0:-Number(x.di.replace(/-/g,""))};
+function filtered(base){
+  const r = ITEMS.filter(x=>(!base || base(x)) && passF(x));
+  const k = SORTK[F.sort] || SORTK.score;
+  return [...r].sort((a,b)=>k(a)-k(b) || a.k-b.k);
+}
+function fSync(){
+  for (const id in CTRL){ const el=$(id); if (el) el.value = F[CTRL[id]]; }
+  if ($("fFav")) $("fFav").checked = !!F.fav;
+  fBadge();
+}
+function fBadge(){ const t=$("togf"); if (!t) return; const n=fActive(); t.innerHTML = "סינון מתקדם ⚙"+(n?` <span class="fcn" aria-label="${n} מסננים פעילים">${n}</span>`:""); t.classList.toggle("has", n>0); }
+function bindFilters(render, extraReset){
+  const go = () => { fSave(); fBadge(); render(); };
+  for (const id in CTRL){ const el=$(id); if (!el) continue;
+    if (el.tagName==="INPUT"){ let t; el.addEventListener("input", e=>{ clearTimeout(t); t=setTimeout(()=>{ F[CTRL[id]]=e.target.value.trim(); go(); }, 220); }); }
+    else el.addEventListener("change", e=>{ F[CTRL[id]]=e.target.value; if (id==="fCity" && $("fArea")){ F.area="all"; if (extraReset) extraReset(); } go(); });
+  }
+  if ($("fFav")) $("fFav").addEventListener("change", e=>{ F.fav=e.target.checked; go(); });
+  if ($("togf")) $("togf").addEventListener("click", ()=>{ const o=$("fbar").classList.toggle("open"); $("togf").setAttribute("aria-expanded",o); });
+  if ($("openAll")) $("openAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.area, #groups details.card").forEach(d=>d.open=true));
+  if ($("closeAll")) $("closeAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.card, #groups details.area").forEach(d=>d.open=false));
+  if ($("reset")) $("reset").addEventListener("click", ()=>{ fReset(); if (extraReset) extraReset(); fSync(); render(); });
 }
 function renderAreaOpts(){
-  const o = [`<option value="all">כל האזורים</option>`].concat(AREAS.filter(a=>a.city===EXP_CITY).map(a=>`<option value="${esc(a.name)}">${esc(a.name)} (${a.n})</option>`));
+  if (!$("fArea")) return;
+  const c = EXP_CITY || (F.city!=="all" ? F.city : null);
+  const o = [`<option value="all">כל האזורים</option>`].concat(AREAS.filter(a=>(!c||a.city===c) && a.n>0).map(a=>`<option value="${esc(a.name)}">${c?"":esc(a.city)+" – "}${esc(a.name)} (${a.n})</option>`));
   $("fArea").innerHTML = o.join(""); $("fArea").value = F.area;
+  if ($("fArea").value!==F.area){ F.area="all"; $("fArea").value="all"; }
 }
 function renderGroups(){
   const list = filtered(), total = ITEMS.filter(x=>x.c===EXP_CITY).length;
@@ -358,33 +433,68 @@ function renderGroups(){
     const ai = AREAS.find(a=>a.city===EXP_CITY && a.name===nm), its = list.filter(x=>x.h===nm);
     html += `<details class="area" data-area="${esc(nm)}"><summary>${esc(nm)}<span class="cnt">${its.length} נכסים</span></summary><div class="area-body">${snapshot(ai)}${its.map(x=>card(x,false,"e")).join("")}</div></details>`;
   }
-  $("groups").innerHTML = html || `<div class="empty panel">לא נמצאו נכסים לפי הסינון. נסו לאפס את הפילטרים.</div>`;
+  $("groups").innerHTML = html || `<div class="empty panel">לא נמצאו נכסים לפי הסינון. נסו "נקה סינון".</div>`;
   afterRender($("groups"));
 }
-function bindFilters(){
-  const sel = {fArea:"area",fVerd:"verd",fPrice:"price",fRooms:"rooms",fSort:"sort",fDisc:"disc",fWin:"win",fGrp:"grp",fChg:"chg"};
-  for (const id in sel) $(id).addEventListener("change", e=>{ F[sel[id]]=e.target.value; renderGroups(); });
-  $("fRen").addEventListener("change", e=>{ F.ren=e.target.value; renderGroups(); });
-  $("fFav").addEventListener("change", e=>{ F.fav=e.target.checked; renderGroups(); });
-  let t; $("q").addEventListener("input", e=>{ clearTimeout(t); t=setTimeout(()=>{ F.q=e.target.value; renderGroups(); },180); });
-  $("togf").addEventListener("click", ()=>{ const o=$("fbar").classList.toggle("open"); $("togf").setAttribute("aria-expanded",o); });
-  $("openAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.area, #groups details.card").forEach(d=>d.open=true));
-  $("closeAll").addEventListener("click", ()=>document.querySelectorAll("#groups details.card, #groups details.area").forEach(d=>d.open=false));
-  $("reset").addEventListener("click", ()=>{ Object.assign(F,{area:"all",verd:"all",price:"5000000",rooms:"all",sort:"score",disc:"0",win:"all",grp:"all",ren:"all",fav:false,chg:"all",q:""});
-    $("q").value=""; $("fFav").checked=false; ["fRen","fVerd","fPrice","fRooms","fSort","fDisc","fWin","fGrp","fChg"].forEach(id=>$(id).selectedIndex=0); renderAreaOpts(); renderGroups(); });
-}
+function deepId(){ const id = new URLSearchParams(location.search).get("id"); return id && ITEM_BY_ID[id] ? ITEM_BY_ID[id] : null; }
 function openTarget(){
-  const id = new URLSearchParams(location.search).get("id"); if(!id) return;
-  const x = ITEM_BY_ID[id]; if(!x) return;
+  const x = deepId(); if(!x) return;
   const el = document.getElementById("e"+x.k); if(!el) return;
   const ar = el.closest("details.area"); if(ar) ar.open = true; el.open = true;
   setTimeout(()=>el.scrollIntoView({block:"start"}),50);
 }
 function pageCity(){
-  EXP_CITY = document.body.dataset.city;
+  EXP_CITY = document.body.dataset.city; FSCOPE = EXP_CITY==="רמת גן" ? "rg" : "ta";
   const its = ITEMS.filter(x=>x.c===EXP_CITY);
   metrics($("metrics"), its);
-  renderAreaOpts(); bindFilters(); renderGroups(); openTarget();
+  fLoad(); F.city="all";
+  const dx = deepId(); if (dx && dx.c===EXP_CITY && !passF(dx)) fReset();   // deep link always shows its card
+  renderAreaOpts(); fSync(); bindFilters(renderGroups); renderGroups(); openTarget();
+}
+
+/* ---------- pinui-binui / urban renewal page ---------- */
+const isT38 = x => !!(x.ex && x.ex.rv && x.ex.rv.t38);
+const inCmp = x => x.ci>=0 && x.rw;
+const isPot = x => x.age===1 && !inCmp(x) && !isT38(x);
+const isRenItem = x => inCmp(x) || isT38(x) || isPot(x);
+function pagePinui(){
+  FSCOPE = "pinui"; fLoad(); fSync();
+  const all = ITEMS.filter(isRenItem);
+  const cmpAll = {}; all.filter(inCmp).forEach(x=>{ (cmpAll[x.ci]=cmpAll[x.ci]||[]).push(x); });
+  const nC = Object.keys(cmpAll).length, nIn = all.filter(x=>inCmp(x)&&x.rd===0).length;
+  $("metrics").innerHTML = [[nC,"מתחמים עם נכסים"],[all.filter(inCmp).length,"נכסים בתוך / ליד מתחם"],[nIn,"בתוך המתחם עצמו"],[all.filter(x=>inCmp(x)&&CMP[x.ci][4]===1).length,"במתחם עם תוכנית מאושרת"],[all.filter(isT38).length+" / "+all.filter(isPot).length,"תמ״א 38 / פוטנציאל"]].map(m=>`<div class="metric"><b>${m[0]}</b><span>${m[1]}</span></div>`).join("");
+  const cityOf = arr => { const s=[...new Set(arr.map(x=>x.c))]; return s.join(" / "); };
+  function render(){
+    const list = filtered(isRenItem), rs = F.rst;
+    const byC = {}; list.filter(inCmp).forEach(x=>{ if (rs==="in" && x.rd!==0) return; (byC[x.ci]=byC[x.ci]||[]).push(x); });
+    let cis = Object.keys(byC).map(Number);
+    if (rs==="appr") cis = cis.filter(ci=>CMP[ci][4]===1);
+    if (rs==="plan") cis = cis.filter(ci=>CMP[ci][4]!==1);
+    if (rs==="t38" || rs==="pot") cis = [];
+    cis.sort((a,b)=>(CMP[b][4]===1)-(CMP[a][4]===1) || Math.max(...byC[b].map(x=>x.s))-Math.max(...byC[a].map(x=>x.s)) || byC[b].length-byC[a].length);
+    const t38 = (rs==="all"||rs==="t38") ? list.filter(isT38) : [];
+    const pot = (rs==="all"||rs==="pot") ? list.filter(isPot) : [];
+    const shown = new Set(); cis.forEach(ci=>byC[ci].forEach(x=>shown.add(x.id))); t38.forEach(x=>shown.add(x.id)); pot.forEach(x=>shown.add(x.id));
+    $("resCnt").textContent = "מוצגים "+shown.size+" מתוך "+all.length+" נכסים · "+cis.length+" מתחמים";
+    let h = "";
+    if (cis.length){
+      h += `<h3 class="ren-h"><i aria-hidden="true">🏗️</i>מתחמי פינוי־בינוי והתחדשות <span class="cnt">${cis.length}</span></h3>`;
+      for (const ci of cis){
+        const c = CMP[ci], its = byC[ci], ap = c[4]===1, inside = its.filter(x=>x.rd===0).length;
+        const units = c[2]&&c[3] ? `<span class="u">${esc(c[2])} → ${esc(c[3])} יח״ד</span>` : `<span class="u mut">יח״ד לא ידוע</span>`;
+        h += `<details class="area cmp ${ap?"ap":"pl"}" data-ci="${ci}"><summary><span class="cn">${esc(c[0])}<small>${esc(c[1])} · ${esc(cityOf(its))}</small></span><span class="st ${ap?"ap":"pl"}">${ap?"✔ מאושר":"⏳ בתכנון"}</span>${units}<span class="cnt">${its.length} נכסים</span></summary><div class="area-body">
+         <div class="snap"><div><b>סטטוס</b>${ap?"תוכנית מאושרת":"מתחם בתכנון – טרם אושר; אופק ארוך ולא ודאי"}</div><div><b>סוג</b>${esc(c[1])}</div><div><b>יחידות דיור</b>${c[2]&&c[3]?esc(c[2])+" קיימות → "+esc(c[3])+" מתוכננות":"לא ידוע"}</div><div><b>הנכסים כאן</b>${inside} בתוך המתחם · ${its.length-inside} עד 150 מ׳ ממנו (${its.map(x=>x.rd).sort((a,b)=>a-b).map(d=>d===0?"בתוך":d+" מ׳").join(", ")})</div></div>
+         ${its.map(x=>card(x,false,"rc")).join("")}</div></details>`;
+      }
+    }
+    if (t38.length) h += `<h3 class="ren-h"><i aria-hidden="true">🏢</i>תמ״א 38 – בקשות/היתרים בכתובת (תל אביב) <span class="cnt">${t38.length}</span></h3>
+      <details class="area t38"><summary><span class="cn">נכסים עם בקשת/היתר תמ״א 38<small>לפי מאגר הבקשות וההיתרים של עיריית תל אביב</small></span><span class="cnt">${t38.length} נכסים</span></summary><div class="area-body"><p class="lead">בקשה אינה אישור – יש לבדוק מול העירייה מה אושר ובאיזה שלב. ברמת גן אין מקור ממוחשב ברמת הבניין.</p>${t38.map(x=>card(x,false,"rt")).join("")}</div></details>`;
+    if (pot.length) h += `<h3 class="ren-h"><i aria-hidden="true">🧱</i>פוטנציאל – בניינים ישנים מחוץ למתחם <span class="cnt">${pot.length}</span></h3>
+      <details class="area pot"><summary><span class="cn">בניינים ישנים בלי מתחם ידוע<small>פוטנציאל לתמ״א 38 / התחדשות נקודתית – לא מתומחר</small></span><span class="cnt">${pot.length} נכסים</span></summary><div class="area-body"><p class="lead">בניין ישן שאינו בתוך או ליד מתחם התחדשות ידוע ולא נמצאה בו בקשת תמ״א 38. הפוטנציאל השערה בלבד ותלוי בזכויות, בתב״ע ובדיירים.</p>${pot.map(x=>card(x,false,"rp")).join("")}</div></details>`;
+    $("groups").innerHTML = h || `<div class="empty panel">לא נמצאו נכסים לפי הסינון. נסו "נקה סינון".</div>`;
+    afterRender($("groups"));
+  }
+  bindFilters(render); render();
 }
 
 /* ---------- home ---------- */
@@ -401,18 +511,23 @@ function pageHome(){
   if (bi && $("bialikRpt")) $("bialikRpt").href = "favorites.html#"+(hasRes(bi.id)?"rpt-"+encodeURIComponent(bi.id):"research");
   const cs = c => { const v=ITEMS.filter(x=>x.c===c); return {n:v.length,buy:v.filter(x=>x.vk==="buy").length,d:med(v.map(x=>x.d)),r:v.filter(x=>x.rw).length}; };
   $("cityStats").innerHTML = [["תל אביב",cs("תל אביב")],["רמת גן",cs("רמת גן")]].map(([n,s])=>`<div><b>${n}</b>${s.n} נכסים · הנחה חציונית ${s.d}% · ${s.buy} שווה לקנות · ${s.r} ליד התחדשות</div>`).join("");
+  const dr = RAW.DR, nUnk = ITEMS.filter(x=>!x.di).length;
+  if ($("winInfo")) $("winInfo").innerHTML = `🗓 מוצגות רק מודעות שפורסמו ב-${dr.win_months||4} החודשים האחרונים (מ-${isoDmy(dr.win_cut||"")} ואילך). ${dr.n_win||0} מודעות ישנות יותר הוצאו. ${nUnk} נכסים בלי תאריך פרסום ידוע נשארו ומסומנים <span class="bdg nod">⚠ תאריך לא מאומת</span>.`;
   afterRender(document);
 }
 
 /* ---------- map ---------- */
 function pageMap(){
-  const M = {city:"all",area:"all",verd:"all",fav:false};
+  FSCOPE = "map"; fLoad();
+  const M = F;
   const colors = {buy:"#15803d",check:"#d97706",skip:"#b91c1c"};
-  let map=null, layer=null, ok=false;
-  const list = () => ITEMS.filter(x=>x.ex.lat && (M.city==="all"||x.c===M.city) && (M.area==="all"||x.h===M.area) && (M.verd==="all"||x.vk===M.verd) && (!M.fav||isFav(x.id)));
+  let map=null, layer=null, ok=false, MK={}, focused=false;
+  const dx = deepId(); if (dx && !passF(dx)) fReset();
+  const list = () => filtered(x=>!!x.ex.lat);
   function areaOpts(){
-    const o = [`<option value="all">כל האזורים</option>`].concat(AREAS.filter(a=>M.city==="all"||a.city===M.city).map(a=>`<option value="${esc(a.name)}">${M.city==="all"?esc(a.city)+" – ":""}${esc(a.name)} (${a.n})</option>`));
+    const o = [`<option value="all">כל האזורים</option>`].concat(AREAS.filter(a=>(M.city==="all"||a.city===M.city) && a.n>0).map(a=>`<option value="${esc(a.name)}">${M.city==="all"?esc(a.city)+" – ":""}${esc(a.name)} (${a.n})</option>`));
     $("mArea").innerHTML = o.join(""); $("mArea").value = M.area;
+    if ($("mArea").value!==M.area){ M.area="all"; $("mArea").value="all"; }
   }
   function popup(x){
     return `<b>${esc(x.a)}</b><br>${esc(x.h)} · ${esc(x.c)}<br>${nf(x.p)} ₪ · ${x.rm==null?"—":x.rm} חד׳ · ${x.q} מ״ר<br>ציון ${x.s.toFixed(1)} · הנחה ${x.d}% (ריאלית ${x.rd2}%) · ${VL[x.vk]}${x.yld!=null?"<br>תשואה ~"+x.yld.toFixed(1)+"% (הערכה)":""}${x.ex.geo==="exact"?"":"<br><i>מיקום משוער (לפי רחוב/מודעה)</i>"}<br><a href="${CITY_PAGE[x.c]}?id=${encodeURIComponent(x.id)}">לכרטיס המלא</a> · <a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">למודעה ↗</a>`;
@@ -421,18 +536,20 @@ function pageMap(){
     const L_ = list();
     $("mCnt").textContent = "מוצגים "+L_.length+" נכסים על המפה";
     if (ok){
-      layer.clearLayers(); const pts=[];
+      layer.clearLayers(); const pts=[]; MK={};
       L_.forEach(x=>{ const ll=[x.ex.lat,x.ex.lon]; pts.push(ll);
-        L.circleMarker(ll,{radius:8,color:x.ex.geo==="exact"?"#fff":"#111",weight:x.ex.geo==="exact"?2:1.5,dashArray:x.ex.geo==="exact"?null:"3",fillColor:colors[x.vk],fillOpacity:.85}).bindPopup(popup(x)).addTo(layer); });
-      if (pts.length) map.fitBounds(pts,{padding:[24,24],maxZoom:15});
+        MK[x.id]=L.circleMarker(ll,{radius:8,color:x.ex.geo==="exact"?"#fff":"#111",weight:x.ex.geo==="exact"?2:1.5,dashArray:x.ex.geo==="exact"?null:"3",fillColor:colors[x.vk],fillOpacity:.85}).bindPopup(popup(x)).addTo(layer); });
+      if (dx && !focused && MK[dx.id]){ focused=true; map.setView([dx.ex.lat,dx.ex.lon],16); MK[dx.id].openPopup(); }
+      else if (pts.length) map.fitBounds(pts,{padding:[24,24],maxZoom:15});
     }
     $("mList").innerHTML = `<thead><tr><th>כתובת</th><th>אזור</th><th>מחיר ₪</th><th>ציון</th><th>הנחה</th><th>מיקום</th><th></th></tr></thead><tbody>`+L_.map(x=>`<tr><td>${esc(x.a)}</td><td>${esc(x.c)} · ${esc(x.h)}</td><td class="num">${nf(x.p)}</td><td>${x.s.toFixed(1)}</td><td>${x.d}%</td><td>${x.ex.geo==="exact"?"כתובת":"משוער"}</td><td><a href="${CITY_PAGE[x.c]}?id=${encodeURIComponent(x.id)}">כרטיס</a></td></tr>`).join("")+`</tbody>`;
   }
-  $("mCity").addEventListener("change",e=>{ M.city=e.target.value; M.area="all"; areaOpts(); draw(); });
-  $("mArea").addEventListener("change",e=>{ M.area=e.target.value; draw(); });
-  $("mVerd").addEventListener("change",e=>{ M.verd=e.target.value; draw(); });
-  $("mFav").addEventListener("change",e=>{ M.fav=e.target.checked; draw(); });
-  areaOpts(); draw();
+  const mSync = () => { $("mCity").value=M.city; $("mVerd").value=M.verd; $("mFav").checked=!!M.fav; areaOpts(); };
+  $("mCity").addEventListener("change",e=>{ M.city=e.target.value; M.area="all"; areaOpts(); fSave(); fBadge(); draw(); });
+  $("mArea").addEventListener("change",e=>{ M.area=e.target.value; fSave(); fBadge(); draw(); });
+  $("mVerd").addEventListener("change",e=>{ M.verd=e.target.value; fSave(); fBadge(); draw(); });
+  $("mFav").addEventListener("change",e=>{ M.fav=e.target.checked; fSave(); fBadge(); draw(); });
+  fSync(); mSync(); bindFilters(draw, mSync); draw();
   function init(){
     try {
       map = L.map("map",{scrollWheelZoom:true}).setView([32.07,34.80],12);
@@ -622,7 +739,8 @@ function pageMethod(){
    ["אין מיקום/עסקאות להשוואה",nf(dd.n_nocomps),"כתובת שלא אותרה במאגר או ללא עסקאות דומות"],
    ["סוג נכס לא רלוונטי",nf(dd.n_badtype),"וילה, קוטג׳, מגרש, בניין שלם וכד׳"],
    ["הוסרו מהאתר",dd.n_removed,dd.removed.map(r=>esc(r.a)).join(", ")],
-   ["פורסמו לפני 24/10/2025",dd.n_old,"עברו את סף ההנחה/התחדשות אך מעל שנה בשוק (לפי createdAt / תאריך מקור)"],
+   ["פורסמו לפני "+isoDmy(dd.win_cut||"")+" (חלון "+(dd.win_months||4)+" חודשים)",dd.n_win||0,"הוצאו בבניית האתר: עברו את הסינון אך פורסמו לפני תחילת החלון"+(dd.win_list&&dd.win_list.length?" – למשל "+dd.win_list.slice(0,6).map(r=>esc(r.a.split(" (")[0])+" ("+r.dt+")").join(", "):"")],
+   ["פורסמו לפני יותר משנה",dd.n_old,"עברו את סף ההנחה/התחדשות אך מעל שנה בשוק (לפי createdAt / תאריך מקור)"],
    ["הנחה חריגה מעל 45%",dd.n_extreme,"כמעט בוודאות טעות בשטח/סוג נכס/עסקאות"],
    ["ללא תאריך ולא חזקות מספיק",dd.n_nodate_weak,"לא ניתן לאמת טריות"],
    ["ציון נמוך מהסף",dd.n_lowscore,"עברו את הסף אך מתחת ל-7.3"]
@@ -683,9 +801,9 @@ function initLook(){
 function boot(){
   initLook();
   const pg = document.body.dataset.page;
-  const f = {home:pageHome, city:pageCity, map:pageMap, favs:pageFavs, method:pageMethod}[pg];
+  const f = {home:pageHome, city:pageCity, ren:pagePinui, map:pageMap, favs:pageFavs, method:pageMethod}[pg];
   if (f) f();
-  if (pg!=="city" && pg!=="map" && (pg==="favs" || document.querySelector("details.card"))){
+  if (pg!=="city" && pg!=="map" && pg!=="ren" && (pg==="favs" || document.querySelector("details.card"))){
     const bar=document.createElement("div"); bar.className="cardtools";
     bar.innerHTML='<button class="btn sec" id="cardsOpen" type="button">פתח הכול</button><button class="btn sec" id="cardsClose" type="button">סגור הכול</button><span class="mut">הכרטיסים סגורים כברירת מחדל – לחצו על כרטיס לפירוט מלא</span>';
     if (pg==="home" && $("topCards")) $("topCards").parentNode.insertBefore(bar,$("topCards")); else { const main=document.querySelector("main"); main.insertBefore(bar, main.firstChild); }

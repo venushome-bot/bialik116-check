@@ -404,6 +404,7 @@ details.nfo .nt{display:block;margin-top:6px;font-size:13px;font-weight:400;colo
 }
 @media (max-width:370px){nav.toc a{font-size:9.5px}nav.toc a .ic{font-size:18px}}
 .bdg.nod{background:var(--chkbg);color:var(--chk);border:1px dashed color-mix(in srgb,var(--schk) 60%,transparent)}
+.bdg.qunk{background:var(--chkbg);color:var(--chk);border:1px dashed color-mix(in srgb,var(--schk) 60%,transparent)}
 .kpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
 .kpi.good .ks{color:var(--buy);font-weight:700}.kpi.bad .ks{color:var(--skip);font-weight:700}
 .kpi.rn.yes{background:var(--yes-bg)}.kpi.rn.yes b{color:var(--yes-tx)}.kpi.rn.maybe{background:var(--maybe-bg)}.kpi.rn.maybe b{color:var(--maybe-tx)}

@@ -609,25 +609,28 @@ function bindTiles(acts, isOn, targetId, after){
   sync(); return sync; }
 
 /* ---------- rentals near קריניצי 57 (window.RENTALS from rentals.js) ---------- */
-const RTAG = {metro:["מרחב תכנון מטרו","maybe","בתוך מרחב תכנון של תחנת מטרו (תכנית־אב רחבה, לא תכנית לבניין) – לבדיקה"],nearcmp:["סמוך למתחם התחדשות","maybe","קרוב למתחם פינוי־בינוי / התחדשות אך לא בתוכו"],lease:["החלפת חוזה","no","כניסה בהחלפת חוזה (מחליף/ה) – לבדוק מול בעל הדירה"],cheap:["זול חשוד","drop","שכירות מתחת ל-70% מחציון הדירות עם אותו מספר חדרים ברשימה – לבדוק מה הסיבה"],women:["לנשים בלבד","no","המודעה מציינת: לנשים בלבד"],split:["דירה מחולקת","no","דירה מחולקת (לפי המודעה)"],unit:["יחידת דיור","no","יחידת דיור (לפי המודעה)"],newbld:["בניין חדש","yes","המודעה מציינת בניין חדש"]};
+const RTAG = {metro:["מרחב תכנון מטרו","maybe","בתוך מרחב תכנון של תחנת מטרו (תכנית־אב רחבה, לא תכנית לבניין) – לבדיקה"],nearcmp:["סמוך למתחם התחדשות","maybe","קרוב למתחם פינוי־בינוי / התחדשות אך לא בתוכו"],lease:["החלפת חוזה","no","כניסה בהחלפת חוזה (מחליף/ה) – לבדוק מול בעל הדירה"],cheap:["זול חשוד","drop","שכירות מתחת ל-70% מחציון הדירות עם אותו מספר חדרים ברשימה – לבדוק מה הסיבה"],women:["לנשים בלבד","no","המודעה מציינת: לנשים בלבד"],split:["דירה מחולקת","no","דירה מחולקת (לפי המודעה)"],unit:["יחידת דיור","no","יחידת דיור (לפי המודעה)"],newbld:["בניין חדש","yes","המודעה מציינת בניין חדש"],maybedup:["ייתכן כפילות","maybe","ייתכן שזו אותה דירה כמו מודעה אחרת ברשימה (אותו רחוב, חדרים ושטח) – לא אוחדו; פרטים ב״פרטים מלאים״"]};
 function pageRent(){
   const RD = window.RENTALS; if (!RD){ $("rCards").innerHTML = `<div class="empty panel">אין נתוני השכרות.</div>`; return; }
+  const srcLab = u => u.includes("yad2")?"yad2.co.il":u.includes("komo")?"komo.co.il":u.includes("doortodoor")?"doortodoor.ltd":u.includes("onmap")?"onmap.co.il":u.includes("ad.co.il")?"ad.co.il":"מקור נוסף";
+  const RID = Object.fromEntries(RD.items.map(x=>[x.u,x.id]));
   const O = RD.origin, C = RD.criteria, IT = RD.items, W_ = (RD.scoring||{}).weights||{value:40,dist:25,fresh:15,rel:20}, RP = (RD.scoring||{}).rel_penalties||{};
   const km = x => x.d==null ? "—" : (x.dx?"~":"")+x.d.toFixed(2)+" ק״מ";
   const cityN = Object.entries(RD.city_counts).sort((a,b)=>b[1]-a[1]);
-  const nUnv = IT.filter(x=>!x.pub).length, nTag = IT.filter(x=>x.t.includes("metro")||x.t.includes("nearcmp")).length;
-  $("metrics").innerHTML = tilesHtml([[IT.length,"דירות ברשימה",{act:"all",tip:"הצג את כל הדירות (ניקוי סינון)"}]].concat(cityN.map(([c,n])=>[n,esc(c),{act:"c:"+c,tip:"סנן: "+c}])).concat([[nUnv,"תאריך לא מאומת",{act:"unv",tip:"הצג רק דירות עם תאריך לא מאומת"}]]));
+  const nUnv = IT.filter(x=>!x.pub).length, nQ = IT.filter(x=>x.qunk).length, nTag = IT.filter(x=>x.t.includes("metro")||x.t.includes("nearcmp")).length;
+  $("metrics").innerHTML = tilesHtml([[IT.length,"דירות ברשימה",{act:"all",tip:"הצג את כל הדירות (ניקוי סינון)"}]].concat(cityN.map(([c,n])=>[n,esc(c),{act:"c:"+c,tip:"סנן: "+c}])).concat([[nUnv,"תאריך לא מאומת",{act:"unv",tip:"הצג רק דירות עם תאריך לא מאומת"}]]).concat(nQ?[[nQ,"גודל לא ידוע",{act:"qunk",tip:"הצג רק דירות בלי שטח במודעה – לבדוק שמגיעות ל-45 מ״ר"}]]:[]));
+  const Y2P = RD.yad2_private||{rows:0,added:[],dup:[],renewal:[],far:[]};
   const srcN = Object.entries(RD.src_counts).map(([s,n])=>s.replace(/\.(ltd|co\.il)$/,"")+" "+n).join(" · ");
-  $("rInfo").innerHTML = `<p class="lead" style="margin:0"><b>תנאים:</b> שכירות עד ${nf(C.max_rent)} ₪ לחודש · עד ${C.radius_km_haversine} ק״מ בקו אווירי · פורסמה מ-${isoDmy(C.published_on_or_after)} ואילך · בלי שותפים/חדר, בלי בניינים בפינוי־בינוי / תמ״א 38, רק מגורים לטווח ארוך.</p>
-   <p class="lead" style="margin:8px 0 0"><b>נקודת המוצא:</b> ${esc(O.address)} (${O.lat.toFixed(5)}, ${O.lon.toFixed(5)}). <b>לפי עיר:</b> ${cityN.map(([c,n])=>esc(c)+" "+n).join(" · ")} (סה״כ ${IT.length}).</p>
-   <p class="lead" style="margin:8px 0 0"><b>מקורות:</b> נסרקו doortodoor, קומו, onmap ו-ad.co.il (ברשימה: ${esc(srcN)}). יד2, הומלס ומדלן חסומים לסריקה נכון ל-31/10/2026 – לא נכללו. בקומו אין תאריך פרסום, ולכן מודעות קומו מסומנות "תאריך לא מאומת".</p>
+  $("rInfo").innerHTML = `<p class="lead" style="margin:0"><b>תנאים:</b> שכירות עד ${nf(C.max_rent)} ₪ לחודש · עד ${C.radius_km_haversine} ק״מ בקו אווירי · פורסמה מ-${isoDmy(C.published_on_or_after)} ואילך · <b>שטח מ-${C.min_sqm||45} מ״ר</b> (דירה בלי שטח במודעה נשארת ומסומנת "גודל לא ידוע") · בלי שותפים/חדר, בלי בניינים בפינוי־בינוי / תמ״א 38, רק מגורים לטווח ארוך.</p>
+   <p class="lead" style="margin:8px 0 0"><b>נקודת המוצא:</b> ${esc(O.address)} (${O.lat.toFixed(5)}, ${O.lon.toFixed(5)}). <b>לפי עיר:</b> ${cityN.map(([c,n])=>esc(c)+" "+n).join(" · ")} (סה״כ ${IT.length}).${(RD.excluded_small||[]).length?` <a href="#rexcs">${RD.excluded_small.length} דירות מתחת ל-${C.min_sqm||45} מ״ר</a> הוצאו (רשימה בתחתית הדף).`:""}</p>
+   <p class="lead" style="margin:8px 0 0"><b>מקורות:</b> נסרקו doortodoor, קומו, onmap ו-ad.co.il (ברשימה: ${esc(srcN)}). ${Y2P.rows?`יד2 חוסם סריקה אוטומטית, ולכן נאספו ממנו ידנית ${Y2P.rows} מודעות בגלישה פרטית (31/10/2026): ${Y2P.added.length} נכנסו לרשימה, ${Y2P.dup.length+Y2P.renewal.filter(e=>e.to).length} כבר הופיעו ממקור אחר (הקישור נוסף), ${Y2P.renewal.length} בבניין בהתחדשות, ${Y2P.far.length} רחוקות מ-${C.radius_km_haversine} ק״מ. הומלס ומדלן חסומים לסריקה – לא נכללו.`:"יד2, הומלס ומדלן חסומים לסריקה נכון ל-31/10/2026 – לא נכללו."} בקומו אין תאריך פרסום, ולכן מודעות קומו מסומנות "תאריך לא מאומת".</p>
    ${RD.scoring?`<p class="lead" style="margin:8px 0 0"><b>ציון 0–100:</b> מחיר מול חציון אותו מספר חדרים ${RD.scoring.weights.value} · מרחק ${RD.scoring.weights.dist} · טריות ${RD.scoring.weights.fresh} · אמינות הנתונים ${RD.scoring.weights.rel}. <a href="methodology.html#rentscore">איך מחושב</a></p>`:""}
    <details class="mmeth"><summary>שיטה ומגבלות</summary><ul class="mnote"><li>מרחק = קו אווירי (haversine) מנקודת המוצא. "~" = מיקום משוער (רחוב בלי מספר בית – הנקודה הקרובה ברחוב).</li><li>מיקום: ${esc(RD.geocoding)}</li><li>התחדשות: אצל כל הדירות ברשימה הסטטוס "לא ידוע" – לא נמצאה בהן התחדשות במאגרים, אבל זו לא הוכחה. בניינים שנמצאו בתוך מתחם הוצאו (ראו למטה). תגיות: "מרחב תכנון מטרו" ו"סמוך למתחם" – לבדיקה.</li><li>"זול חשוד" מחושב: שכירות מתחת ל-70% מחציון הדירות עם אותו מספר חדרים ברשימה.</li><li>מקורות ההתחדשות: ${RD.renewal_sources.map(esc).join(" · ")}</li></ul></details>`;
-  const RK = "rs_rent_v1", R0 = {city:"all",sort:"score",max:"",score:"0",cond:"all",onlyunv:false,rooms:"0",dist:"0",nounv:false,notag:false};
+  const RK = "rs_rent_v1", R0 = {city:"all",sort:"score",max:"",score:"0",cond:"all",onlyunv:false,rooms:"0",dist:"0",nounv:false,notag:false,noq:false,onlyq:false};
   const R = Object.assign({}, R0); try { Object.assign(R, JSON.parse(localStorage.getItem(RK)||"{}")); } catch(e){}
   const save = () => { try { const o={}; for (const k in R0) if (R[k]!==R0[k]) o[k]=R[k]; localStorage.setItem(RK, JSON.stringify(o)); } catch(e){} };
-  const nAct = () => ["city","max","rooms","dist","score","cond","nounv","onlyunv","notag"].filter(k=>R[k]!==R0[k]).length;
-  const pass = x => (R.city==="all"||x.c===R.city) && (R.max===""||x.p<=+R.max) && (+R.rooms===0||(x.rm!=null&&+x.rm>=+R.rooms)) && (+R.dist===0||(x.d!=null&&x.d<=+R.dist)) && (+R.score===0||(x.sc&&x.sc.s>=+R.score)) && (!R.nounv||!!x.pub) && (!R.onlyunv||!x.pub) && (R.cond==="all"||x.cond===R.cond) && (!R.notag||!(x.t.includes("metro")||x.t.includes("nearcmp")));
+  const nAct = () => ["city","max","rooms","dist","score","cond","nounv","onlyunv","notag","noq","onlyq"].filter(k=>R[k]!==R0[k]).length;
+  const pass = x => (R.city==="all"||x.c===R.city) && (R.max===""||x.p<=+R.max) && (+R.rooms===0||(x.rm!=null&&+x.rm>=+R.rooms)) && (+R.dist===0||(x.d!=null&&x.d<=+R.dist)) && (+R.score===0||(x.sc&&x.sc.s>=+R.score)) && (!R.nounv||!!x.pub) && (!R.onlyunv||!x.pub) && (R.cond==="all"||x.cond===R.cond) && (!R.noq||!x.qunk) && (!R.onlyq||!!x.qunk) && (!R.notag||!(x.t.includes("metro")||x.t.includes("nearcmp")));
   const SK = {score:x=>x.sc?-x.sc.s:0, dist:x=>x.d==null?99:x.d, rent:x=>x.p, rooms:x=>-(x.rm||0), new:x=>x.pub?-Number(x.pub.replace(/-/g,"")):0};
   const tagB = x => x.t.filter(t=>RTAG[t]).map(t=>`<span class="bdg ren ${RTAG[t][1]==="drop"?"no rt-cheap":RTAG[t][1]}" title="${esc(RTAG[t][2])}">${esc(RTAG[t][0])}</span>`).join("");
   const scCls = n => n>=70?"hi":n>=55?"mid":"lo";
@@ -635,10 +638,12 @@ function pageRent(){
   const PENL = {approx:"מיקום משוער",nosqm:"אין שטח",nofloor:"אין קומה",cheap:"זול חשוד",metro:"מרחב מטרו",nearcmp:"סמוך למתחם",lease:"החלפת חוזה",women:"לנשים בלבד"};
   const CONDC = {"חדשה":"cnew","משופצת":"cren","ישנה":"cold","לא ידוע":"cunk"};
   const condB = x => x.cond ? `<span class="cond ${CONDC[x.cond]||"cunk"}" title="${esc(x.cev&&x.cev.length?"לפי המודעה: "+x.cev.map(e=>"\u201C"+e.m+"\u201D").join(", "):"אין במודעה ציון של מצב הדירה")}">${x.cond==="לא ידוע"?"מצב לא ידוע":esc(x.cond)}</span>` : "";
+  const pdB = x => x.pd ? `<span class="bdg drop" title="${esc("המחיר ירד מ-"+nf(x.pd.fr)+" ל-"+nf(x.pd.to)+" ₪ · מקור: "+x.pd.src)}">↓ ירד מ-${nf(x.pd.fr)} ₪ (−${x.pd.pct}%)</span>` : "";
+  const qB = x => x.qc ? `<span class="bdg qunk qc" title="בכותרת ובפרטי המודעה מופיעים שני שטחים שונים – לבדוק מול המפרסם; לכלל 45 מ״ר נחשב כגודל לא ידוע">${esc(x.qc)}</span>` : x.q ? `<span class="chip">${nf(x.q)} מ״ר</span>` : `<span class="bdg qunk" title="אין שטח במודעה – לבדוק מול המפרסם שהדירה 45 מ״ר ומעלה">⚠ גודל לא ידוע – לבדוק שמגיע ל-45</span>`;
   function rcard(x,i){
     const dateB = x.pub ? `<span class="chip">פורסמה ${isoDmy(x.pub)}</span>` : `<span class="bdg nod" title="${esc(x.n||"אין תאריך פרסום במקור")}">⚠ תאריך לא מאומת</span>`;
-    const links = [[x.src,x.u]].concat(x.also.map(u=>[u.includes("komo")?"komo.co.il":u.includes("doortodoor")?"doortodoor.ltd":"מקור נוסף",u]));
-    const kp = kpi("שכירות ₪", nf(x.p), "לחודש") + kpi("חדרים", x.rm==null?"—":String(x.rm)) + kpi("שטח", x.q?nf(x.q)+" מ״ר":"—", x.q?"":"לא צוין")
+    const links = [[x.src,x.u]].concat(x.also.map(u=>[srcLab(u),u]));
+    const kp = kpi("שכירות ₪", nf(x.p), x.pd?"ירד מ-"+nf(x.pd.fr)+" ₪":"לחודש", x.pd?"good":"") + kpi("חדרים", x.rm==null?"—":String(x.rm)) + kpi("שטח", x.qc?"סותר":x.q?nf(x.q)+" מ״ר":"לא ידוע", x.qc?"לבדוק במודעה":x.q?(x.qk&&x.qk.startsWith("מהתיאור")?"לפי התיאור":""):"לבדוק שמגיע ל-45")
       + kpi("קומה", x.f==null||x.f===""?"—":esc(String(x.f))) + kpi("מרחק", km(x), x.dx?"משוער":"לפי כתובת") + kpi("כניסה", x.en?esc(x.en.length>22?x.en.slice(0,22)+"…":x.en):"—", x.en&&x.en.length>22?esc(x.en):"");
     const sc = x.sc, scRow = sc ? row("ציון – פירוט", [
         `מחיר ${sc.v}/${W_.value}: `+(sc.med?`${nf(x.p)} ₪ מול חציון ${nf(sc.med)} ₪ ל-${x.rm} חד׳`:"אין מספיק דירות עם אותו מספר חדרים – ניטרלי")+(sc.ppm?` · ${nf(sc.ppm)} ₪ למ״ר`:" · אין שטח"),
@@ -648,11 +653,14 @@ function pageRent(){
     const cRow = row("מצב הדירה", `<b>${esc(x.cond||"לא ידוע")}</b>`+(x.cev&&x.cev.length?"<br>"+x.cev.map(e=>`${esc(e.f)}: \u201C${esc(e.ctx).replace(esc(e.m),"<mark>"+esc(e.m)+"</mark>")}\u201D`).join("<br>"):"<br>אין במודעה ביטוי על מצב הדירה (משופצת / חדשה / דורשת שיפוץ וכו׳) – לא ניחשנו."));
     const rowsF = scRow + cRow + row("כותרת המודעה", esc(x.ti||"—")) + row("תיאור", x.ds?`<span class="rdesc">${esc(x.ds)}</span>`:"—")
       + row("התחדשות – ממצאים", x.re.length?x.re.map(esc).join("<br>"):"—") + row("הערות", esc(x.n||"—"))
+      + row("שטח – מקור", x.qc?esc(x.qc)+" – נחשב כגודל לא ידוע לכלל 45 מ״ר":x.q?esc(nf(x.q)+" מ״ר · "+(x.qk||"שדה המודעה")):"גודל לא ידוע – לבדוק שמגיע ל-45 מ״ר (אין שטח במודעה, לא ניחשנו)")
+      + (x.pd ? row("ירידת מחיר", esc(`${nf(x.pd.fr)} ₪ → ${nf(x.pd.to)} ₪ (−${nf(x.pd.fr-x.pd.to)} ₪, ${x.pd.pct}%) · ${x.pd.src}`)) : "")
+      + (x.dup ? row("ייתכן כפילות", `<a href="#r-${esc(RID[x.dup.u]||"")}">${esc(x.dup.a)}</a> ב-${esc(x.dup.src)} · ${nf(x.dup.p)} ₪ · קומה ${esc(String(x.dup.f||"—"))} · <a href="${esc(x.dup.u)}" target="_blank" rel="noopener noreferrer">למודעה ↗</a> – לא אוחדו כי אין התאמה ודאית`) : "")
       + row("מיקום", esc(x.gm||"—")+(x.dx?" · משוער":"")) + row("מקור התאריך", esc(x.pubk||"—"))
       + (x.cheapmed ? row("זול חשוד", `${nf(x.p)} ₪ מול חציון ${nf(x.cheapmed)} ₪ לדירות עם ${x.rm} חד׳ ברשימה`) : "");
     return `<details class="card rcard" id="r-${esc(x.id)}" data-id="${esc(x.id)}"><summary>
      <div class="c1">${scB(x)}${condB(x)}<span class="rank rdist" title="מרחק מקריניצי 57">${km(x)}</span><div class="addr">${esc(x.a.replace(/, [^,]+$/,""))}<small>${esc(x.h?x.h+" · ":"")}${esc(x.c)}</small></div></div>
-     <div class="c2"><span class="price">${nf(x.p)} ₪</span><span class="chip">${x.rm==null?"—":x.rm} חד׳</span>${dateB}<span class="chev" style="margin-inline-start:auto"></span></div>
+     <div class="c2"><span class="price">${nf(x.p)} ₪</span><span class="chip">${x.rm==null?"—":x.rm} חד׳</span>${qB(x)}${pdB(x)}${dateB}<span class="chev" style="margin-inline-start:auto"></span></div>
     </summary><div class="cbody">
      ${x.sc?`<div class="scline">${scB(x,1)}<span>מחיר ${x.sc.v}/${W_.value} · מרחק ${x.sc.d}/${W_.dist} · טריות ${x.sc.f}/${W_.fresh} · אמינות ${x.sc.r}/${W_.rel}</span></div>`:""}
      <div class="kpis k6">${kp}</div>
@@ -687,22 +695,27 @@ function pageRent(){
     setTimeout(()=>{ if(!mapOk && !window.L) fail(); },9000);
   }
   $("rMapBox").addEventListener("toggle", ()=>{ if ($("rMapBox").open){ initMap(); if (map) setTimeout(()=>map.invalidateSize(),50); } });
-  const sync = () => { $("rCity").value=R.city; $("rSort").value=R.sort; $("rMax").value=R.max; $("rRooms").value=R.rooms; $("rDist").value=R.dist; $("rScore").value=R.score; $("rCond").value=R.cond; $("rOnlyUnv").checked=!!R.onlyunv; $("rNoUnv").checked=!!R.nounv; $("rNoTag").checked=!!R.notag; };
+  const sync = () => { $("rCity").value=R.city; $("rSort").value=R.sort; $("rMax").value=R.max; $("rRooms").value=R.rooms; $("rDist").value=R.dist; $("rScore").value=R.score; $("rCond").value=R.cond; $("rOnlyUnv").checked=!!R.onlyunv; $("rNoUnv").checked=!!R.nounv; $("rNoTag").checked=!!R.notag; $("rNoQ").checked=!!R.noq; $("rOnlyQ").checked=!!R.onlyq; };
   [["rCity","city"],["rSort","sort"],["rRooms","rooms"],["rDist","dist"],["rScore","score"],["rCond","cond"]].forEach(([id,k])=>$(id).addEventListener("change",e=>{ R[k]=e.target.value; save(); render(); }));
   let tm; $("rMax").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ R.max=e.target.value.trim(); save(); render(); },220); });
   $("rNoUnv").addEventListener("change",e=>{ R.nounv=e.target.checked; if (R.nounv){ R.onlyunv=false; $("rOnlyUnv").checked=false; } save(); render(); });
   $("rOnlyUnv").addEventListener("change",e=>{ R.onlyunv=e.target.checked; if (R.onlyunv){ R.nounv=false; $("rNoUnv").checked=false; } save(); render(); });
-  tSync = bindTiles({all:()=>{ Object.assign(R,R0,{sort:R.sort}); }, unv:()=>{ R.onlyunv=true; R.nounv=false; }, _c:c=>{ R.city=c; }},
-    k => k==="all" ? nAct()===0 : k==="unv" ? !!R.onlyunv : k.startsWith("c:") ? R.city===k.slice(2) : false, "rlist", ()=>{ save(); sync(); render(); });
+  $("rNoQ").addEventListener("change",e=>{ R.noq=e.target.checked; if (R.noq){ R.onlyq=false; $("rOnlyQ").checked=false; } save(); render(); });
+  $("rOnlyQ").addEventListener("change",e=>{ R.onlyq=e.target.checked; if (R.onlyq){ R.noq=false; $("rNoQ").checked=false; } save(); render(); });
+  tSync = bindTiles({all:()=>{ Object.assign(R,R0,{sort:R.sort}); }, unv:()=>{ R.onlyunv=true; R.nounv=false; }, qunk:()=>{ R.onlyq=true; R.noq=false; }, _c:c=>{ R.city=c; }},
+    k => k==="all" ? nAct()===0 : k==="unv" ? !!R.onlyunv : k==="qunk" ? !!R.onlyq : k.startsWith("c:") ? R.city===k.slice(2) : false, "rlist", ()=>{ save(); sync(); render(); });
   $("rNoTag").addEventListener("change",e=>{ R.notag=e.target.checked; save(); render(); });
   $("togf").addEventListener("click",()=>{ const o=$("fbar").classList.toggle("open"); $("togf").setAttribute("aria-expanded",o); });
   $("openAll").addEventListener("click",()=>document.querySelectorAll("#rCards details.card").forEach(d=>d.open=true));
   $("closeAll").addEventListener("click",()=>document.querySelectorAll("#rCards details.card").forEach(d=>d.open=false));
   $("reset").addEventListener("click",()=>{ Object.assign(R,R0); save(); sync(); render(); });
   sync(); render();
+  const EXS = RD.excluded_small||[];
+  $("rExcSCnt").textContent = EXS.length;
+  $("rExcS").innerHTML = EXS.length ? `<p class="lead">לפי הכלל החדש (31/10/2026) – רק דירות מ-${C.min_sqm||45} מ״ר ומעלה. הדירות האלה עמדו בשאר התנאים (מחיר, מרחק, תאריך, לא שותפים, לא בהתחדשות) אבל השטח שצוין במודעה קטן מ-${C.min_sqm||45} מ״ר. הן לא נכללות בציון ובחציונים.</p><div class="tw"><table class="t"><thead><tr><th>כתובת</th><th>שכירות</th><th>חדרים</th><th>שטח</th><th>מרחק</th><th>סיבה</th></tr></thead><tbody>${EXS.map(e=>`<tr><td><a href="${esc(e.u)}" target="_blank" rel="noopener noreferrer">${esc(e.a)}</a></td><td class="num">${e.p?nf(e.p):"—"}</td><td class="num">${e.rm==null?"—":e.rm}</td><td class="num">${e.q?nf(e.q)+" מ״ר":"—"}</td><td class="num">${e.d!=null?(e.dx?"~":"")+e.d.toFixed(2):"—"}</td><td>${esc(e.why)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="lead">אין.</p>`;
   const EXC = RD.excluded_renewal||[];
   $("rExcCnt").textContent = EXC.length;
-  $("rExc").innerHTML = `<p class="lead">מודעות שנמצאו בבניין בתוך מתחם פינוי־בינוי / התחדשות או עם תמ״א 38 – ולכן לא ברשימה. מוצגת רק סיבת ההתחדשות. "רק בגלל ההתחדשות" = המודעה עמדה בשאר התנאים (מחיר, מרחק, תאריך, לא שותפים).</p><div class="tw"><table class="t"><thead><tr><th>כתובת</th><th>שכירות</th><th>מרחק</th><th>סיבה (התחדשות)</th><th></th></tr></thead><tbody>${EXC.map(e=>`<tr><td><a href="${esc(e.u)}" target="_blank" rel="noopener noreferrer">${esc(e.a)}</a>${e.only?' <span class="bdg yr">רק בגלל ההתחדשות</span>':""}</td><td class="num">${e.p?nf(e.p):"—"}</td><td class="num">${e.d!=null?e.d.toFixed(2):"—"}</td><td>${esc(e.why)}</td><td></td></tr>`).join("")}</tbody></table></div>`;
+  $("rExc").innerHTML = `<p class="lead">מודעות שנמצאו בבניין בתוך מתחם פינוי־בינוי / התחדשות או עם תמ״א 38 – ולכן לא ברשימה. מוצגת רק סיבת ההתחדשות. "רק בגלל ההתחדשות" = המודעה עמדה בשאר התנאים (מחיר, מרחק, תאריך, לא שותפים).</p><div class="tw"><table class="t"><thead><tr><th>כתובת</th><th>שכירות</th><th>מרחק</th><th>סיבה (התחדשות)</th><th></th></tr></thead><tbody>${EXC.map(e=>`<tr><td><a href="${esc(e.u)}" target="_blank" rel="noopener noreferrer">${esc(e.a)}</a>${(e.also||[]).map(u=>` · <a href="${esc(u)}" target="_blank" rel="noopener noreferrer">גם ב-${esc(srcLab(u).replace(/\.(ltd|co\.il)$/,""))} ↗</a>`).join("")}${e.only?' <span class="bdg yr">רק בגלל ההתחדשות</span>':""}</td><td class="num">${e.p?nf(e.p):"—"}</td><td class="num">${e.d!=null?e.d.toFixed(2):"—"}</td><td>${esc(e.why)}</td><td></td></tr>`).join("")}</tbody></table></div>`;
 }
 
 /* ---------- home ---------- */

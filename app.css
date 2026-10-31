@@ -468,3 +468,31 @@ details.mmeth>summary{cursor:pointer;font-weight:800;color:var(--lnk);min-height
 details.rmap{margin:0 0 14px}
 #rExc td:last-child{display:none}#rExc th:last-child{display:none}
 @media (min-width:761px){nav.toc .wrap{gap:2px}nav.toc a{padding:0 10px;gap:6px}}
+/* ==== v7: ציון השכרות ==== */
+.scb{flex:none;display:inline-grid;place-items:center;min-width:38px;height:28px;padding:0 7px;border-radius:9px;font-weight:800;font-size:14.5px;font-variant-numeric:tabular-nums}
+.scb.hi{background:var(--yes-bg);color:var(--yes-tx)}
+.scb.mid{background:var(--maybe-bg);color:var(--maybe-tx)}
+.scb.lo{background:var(--soft);color:var(--mut)}
+.scline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 12px;font-size:14.5px;font-weight:700;color:var(--ink)}
+/* ==== v7: מצב הדירה (השכרות) ==== */
+.cond{flex:none;display:inline-grid;place-items:center;height:28px;padding:0 9px;border-radius:9px;font-weight:700;font-size:13px;white-space:nowrap}
+.cond.cnew{background:var(--newbg);color:var(--newtx)}
+.cond.cren{background:var(--yes-bg);color:var(--yes-tx)}
+.cond.cold{background:var(--no-bg);color:var(--no-tx)}
+.cond.cunk{background:var(--soft);color:var(--mut);font-weight:600}
+.rcard mark{background:var(--favbg);color:var(--favtx);border-radius:4px;padding:0 2px}
+/* ==== v7: clickable hero stat tiles ==== */
+.metrics .mact{font:inherit;color:inherit;text-align:start;cursor:pointer;text-decoration:none;display:block;width:100%;margin:0;position:relative;-webkit-tap-highlight-color:rgba(255,255,255,.28);touch-action:manipulation;transition:transform .12s,background .15s,border-color .15s,box-shadow .15s}
+.metrics .mact:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.55)}
+.metrics .mact:active{transform:scale(.97);background:rgba(255,255,255,.3)}
+.metrics .mact:focus-visible,.metrics .mpart:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.metrics a.mact::after{content:"←";position:absolute;inset-inline-end:12px;top:9px;opacity:.6;font-size:15px;font-weight:800}
+.metrics button.mact::after{content:"⚲";position:absolute;inset-inline-end:12px;top:8px;opacity:.55;font-size:15px}
+.metrics .mact.on{background:#fff;color:#1e1b4b;border-color:#fff;box-shadow:0 6px 18px -6px rgba(0,0,0,.45)}
+.metrics .mact.on::after{content:"✓";opacity:1;color:var(--brand)}
+.metrics .mpart{font:inherit;color:inherit;background:none;border:0;padding:0 3px;margin:0 -3px;border-radius:7px;cursor:pointer;text-decoration:underline dotted 2px;text-underline-offset:5px;-webkit-tap-highlight-color:rgba(255,255,255,.28);touch-action:manipulation}
+.metrics .mpart:hover{background:rgba(255,255,255,.2)}
+.metrics .mpart.on{background:#fff;color:#1e1b4b;text-decoration:none}
+@media (prefers-reduced-motion:reduce){.metrics .mact{transition:none}.metrics .mact:active{transform:none}}
+@media (min-width:761px){#explorer,#rlist,#changes,#mv,#removed,#motintro,.ren-h,.vrow{scroll-margin-top:72px}}
+@media (max-width:760px){#explorer,#rlist,#changes,#mv,#removed,#motintro,.ren-h,.vrow{scroll-margin-top:10px}}

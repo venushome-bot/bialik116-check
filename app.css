@@ -457,3 +457,14 @@ ul.mnote{margin:6px 0 0;padding-inline-start:20px;color:var(--mut);font-size:14.
 }
 details.mmeth{margin-top:10px}
 details.mmeth>summary{cursor:pointer;font-weight:800;color:var(--lnk);min-height:40px;display:flex;align-items:center}
+
+/* ==== v6: השכרות ליד קריניצי ==== */
+.rcard .rdist{min-width:auto;padding:3px 9px;font-size:13.5px;background:var(--vw-bg);color:var(--vw-tx);white-space:nowrap}
+.rcard .c2 .price{font-size:22px}
+.rren{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.bdg.rt-cheap{background:var(--dropbg);color:var(--dropbx)}
+.rdesc{white-space:pre-line;font-weight:400}
+#rMap{height:min(60vh,420px);border-radius:var(--r2);margin-bottom:8px}
+details.rmap{margin:0 0 14px}
+#rExc td:last-child{display:none}#rExc th:last-child{display:none}
+@media (min-width:761px){nav.toc .wrap{gap:2px}nav.toc a{padding:0 10px;gap:6px}}

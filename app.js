@@ -565,6 +565,87 @@ function pageMot(){
   afterRender(document);
 }
 
+/* ---------- rentals near קריניצי 57 (window.RENTALS from rentals.js) ---------- */
+const RTAG = {metro:["מרחב תכנון מטרו","maybe","בתוך מרחב תכנון של תחנת מטרו (תכנית־אב רחבה, לא תכנית לבניין) – לבדיקה"],nearcmp:["סמוך למתחם התחדשות","maybe","קרוב למתחם פינוי־בינוי / התחדשות אך לא בתוכו"],lease:["החלפת חוזה","no","כניסה בהחלפת חוזה (מחליף/ה) – לבדוק מול בעל הדירה"],cheap:["זול חשוד","drop","שכירות מתחת ל-70% מחציון הדירות עם אותו מספר חדרים ברשימה – לבדוק מה הסיבה"],women:["לנשים בלבד","no","המודעה מציינת: לנשים בלבד"],split:["דירה מחולקת","no","דירה מחולקת (לפי המודעה)"],unit:["יחידת דיור","no","יחידת דיור (לפי המודעה)"],newbld:["בניין חדש","yes","המודעה מציינת בניין חדש"]};
+function pageRent(){
+  const RD = window.RENTALS; if (!RD){ $("rCards").innerHTML = `<div class="empty panel">אין נתוני השכרות.</div>`; return; }
+  const O = RD.origin, C = RD.criteria, IT = RD.items;
+  const km = x => x.d==null ? "—" : (x.dx?"~":"")+x.d.toFixed(2)+" ק״מ";
+  const cityN = Object.entries(RD.city_counts).sort((a,b)=>b[1]-a[1]);
+  const nUnv = IT.filter(x=>!x.pub).length, nTag = IT.filter(x=>x.t.includes("metro")||x.t.includes("nearcmp")).length;
+  $("metrics").innerHTML = [[IT.length,"דירות ברשימה"]].concat(cityN.map(([c,n])=>[n,c])).concat([[nUnv,"תאריך לא מאומת"]]).map(m=>`<div class="metric"><b>${m[0]}</b><span>${esc(m[1])}</span></div>`).join("");
+  const srcN = Object.entries(RD.src_counts).map(([s,n])=>s.replace(/\.(ltd|co\.il)$/,"")+" "+n).join(" · ");
+  $("rInfo").innerHTML = `<p class="lead" style="margin:0"><b>תנאים:</b> שכירות עד ${nf(C.max_rent)} ₪ לחודש · עד ${C.radius_km_haversine} ק״מ בקו אווירי · פורסמה מ-${isoDmy(C.published_on_or_after)} ואילך · בלי שותפים/חדר, בלי בניינים בפינוי־בינוי / תמ״א 38, רק מגורים לטווח ארוך.</p>
+   <p class="lead" style="margin:8px 0 0"><b>נקודת המוצא:</b> ${esc(O.address)} (${O.lat.toFixed(5)}, ${O.lon.toFixed(5)}). <b>לפי עיר:</b> ${cityN.map(([c,n])=>esc(c)+" "+n).join(" · ")} (סה״כ ${IT.length}).</p>
+   <p class="lead" style="margin:8px 0 0"><b>מקורות:</b> נסרקו doortodoor, קומו, onmap ו-ad.co.il (ברשימה: ${esc(srcN)}). יד2, הומלס ומדלן חסומים לסריקה נכון ל-31/10/2026 – לא נכללו. בקומו אין תאריך פרסום, ולכן מודעות קומו מסומנות "תאריך לא מאומת".</p>
+   <details class="mmeth"><summary>שיטה ומגבלות</summary><ul class="mnote"><li>מרחק = קו אווירי (haversine) מנקודת המוצא. "~" = מיקום משוער (רחוב בלי מספר בית – הנקודה הקרובה ברחוב).</li><li>מיקום: ${esc(RD.geocoding)}</li><li>התחדשות: אצל כל הדירות ברשימה הסטטוס "לא ידוע" – לא נמצאה בהן התחדשות במאגרים, אבל זו לא הוכחה. בניינים שנמצאו בתוך מתחם הוצאו (ראו למטה). תגיות: "מרחב תכנון מטרו" ו"סמוך למתחם" – לבדיקה.</li><li>"זול חשוד" מחושב: שכירות מתחת ל-70% מחציון הדירות עם אותו מספר חדרים ברשימה.</li><li>מקורות ההתחדשות: ${RD.renewal_sources.map(esc).join(" · ")}</li></ul></details>`;
+  const RK = "rs_rent_v1", R0 = {city:"all",sort:"dist",max:"",rooms:"0",dist:"0",nounv:false,notag:false};
+  const R = Object.assign({}, R0); try { Object.assign(R, JSON.parse(localStorage.getItem(RK)||"{}")); } catch(e){}
+  const save = () => { try { const o={}; for (const k in R0) if (R[k]!==R0[k]) o[k]=R[k]; localStorage.setItem(RK, JSON.stringify(o)); } catch(e){} };
+  const nAct = () => ["city","max","rooms","dist","nounv","notag"].filter(k=>R[k]!==R0[k]).length;
+  const pass = x => (R.city==="all"||x.c===R.city) && (R.max===""||x.p<=+R.max) && (+R.rooms===0||(x.rm!=null&&+x.rm>=+R.rooms)) && (+R.dist===0||(x.d!=null&&x.d<=+R.dist)) && (!R.nounv||!!x.pub) && (!R.notag||!(x.t.includes("metro")||x.t.includes("nearcmp")));
+  const SK = {dist:x=>x.d==null?99:x.d, rent:x=>x.p, rooms:x=>-(x.rm||0), new:x=>x.pub?-Number(x.pub.replace(/-/g,"")):0};
+  const tagB = x => x.t.filter(t=>RTAG[t]).map(t=>`<span class="bdg ren ${RTAG[t][1]==="drop"?"no rt-cheap":RTAG[t][1]}" title="${esc(RTAG[t][2])}">${esc(RTAG[t][0])}</span>`).join("");
+  function rcard(x,i){
+    const dateB = x.pub ? `<span class="chip">פורסמה ${isoDmy(x.pub)}</span>` : `<span class="bdg nod" title="${esc(x.n||"אין תאריך פרסום במקור")}">⚠ תאריך לא מאומת</span>`;
+    const links = [[x.src,x.u]].concat(x.also.map(u=>[u.includes("komo")?"komo.co.il":u.includes("doortodoor")?"doortodoor.ltd":"מקור נוסף",u]));
+    const kp = kpi("שכירות ₪", nf(x.p), "לחודש") + kpi("חדרים", x.rm==null?"—":String(x.rm)) + kpi("שטח", x.q?nf(x.q)+" מ״ר":"—", x.q?"":"לא צוין")
+      + kpi("קומה", x.f==null||x.f===""?"—":esc(String(x.f))) + kpi("מרחק", km(x), x.dx?"משוער":"לפי כתובת") + kpi("כניסה", x.en?esc(x.en.length>22?x.en.slice(0,22)+"…":x.en):"—", x.en&&x.en.length>22?esc(x.en):"");
+    const rowsF = row("כותרת המודעה", esc(x.ti||"—")) + row("תיאור", x.ds?`<span class="rdesc">${esc(x.ds)}</span>`:"—")
+      + row("התחדשות – ממצאים", x.re.length?x.re.map(esc).join("<br>"):"—") + row("הערות", esc(x.n||"—"))
+      + row("מיקום", esc(x.gm||"—")+(x.dx?" · משוער":"")) + row("מקור התאריך", esc(x.pubk||"—"))
+      + (x.cheapmed ? row("זול חשוד", `${nf(x.p)} ₪ מול חציון ${nf(x.cheapmed)} ₪ לדירות עם ${x.rm} חד׳ ברשימה`) : "");
+    return `<details class="card rcard" id="r-${esc(x.id)}" data-id="${esc(x.id)}"><summary>
+     <div class="c1"><span class="rank rdist" title="מרחק מקריניצי 57">${km(x)}</span><div class="addr">${esc(x.a.replace(/, [^,]+$/,""))}<small>${esc(x.h?x.h+" · ":"")}${esc(x.c)}</small></div></div>
+     <div class="c2"><span class="price">${nf(x.p)} ₪</span><span class="chip">${x.rm==null?"—":x.rm} חד׳</span>${dateB}<span class="chev" style="margin-inline-start:auto"></span></div>
+    </summary><div class="cbody">
+     <div class="kpis k6">${kp}</div>
+     <div class="rren"><span class="bdg ren no">🏗 ${esc(x.rs)}</span>${tagB(x)}</div>
+     <div class="tools act">${links.map((l,j)=>`<a class="btn ${j?"sec ":""}lk" href="${esc(l[1])}" target="_blank" rel="noopener noreferrer">${j?"":"🔗 "}${esc(l[0])} ↗</a>`).join("")}</div>
+     <details class="full"><summary>פרטים מלאים</summary><div class="fullb"><div class="secs"><section class="cs"><h4><i aria-hidden="true">📄</i>המודעה</h4><dl>${rowsF}</dl></section></div></div></details>
+    </div></details>`;
+  }
+  let map=null, layer=null, mapOk=false;
+  function list(){ const k=SK[R.sort]||SK.dist; return IT.filter(pass).sort((a,b)=>k(a)-k(b) || (a.d||0)-(b.d||0)); }
+  function render(){
+    const L_ = list();
+    $("resCnt").textContent = "מוצגות "+L_.length+" מתוך "+IT.length+" דירות"; $("rCnt").textContent = L_.length;
+    $("rCards").innerHTML = L_.length ? L_.map(rcard).join("") : `<div class="empty panel">לא נמצאו דירות לפי הסינון. נסו "נקה סינון".</div>`;
+    const t=$("togf"), n=nAct(); t.innerHTML = "סינון ⚙"+(n?` <span class="fcn">${n}</span>`:""); t.classList.toggle("has",n>0);
+    drawMap(L_);
+  }
+  function drawMap(L_){
+    if (!mapOk) return; layer.clearLayers();
+    L.circle([O.lat,O.lon],{radius:C.radius_km_haversine*1000,color:"#4338ca",weight:2,fillOpacity:.05}).addTo(layer);
+    L.circleMarker([O.lat,O.lon],{radius:9,color:"#fff",weight:3,fillColor:"#b91c1c",fillOpacity:1}).bindPopup("<b>"+esc(O.address)+"</b><br>נקודת המוצא").addTo(layer);
+    (L_||list()).filter(x=>x.lat!=null).forEach(x=>L.circleMarker([x.lat,x.lon],{radius:7,color:x.dx?"#111":"#fff",weight:x.dx?1.5:2,dashArray:x.dx?"3":null,fillColor:"#0e7490",fillOpacity:.85})
+      .bindPopup(`<b>${esc(x.a)}</b><br>${nf(x.p)} ₪ · ${x.rm==null?"—":x.rm} חד׳ · ${km(x)}<br><a href="#r-${esc(x.id)}">לכרטיס</a> · <a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">למודעה ↗</a>`).addTo(layer));
+  }
+  function initMap(){
+    if (map || mapOk) return;
+    const go = () => { try { map = L.map("rMap").setView([O.lat,O.lon],14); L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map); layer=L.layerGroup().addTo(map); mapOk=true; drawMap(); map.fitBounds(L.latLng(O.lat,O.lon).toBounds(C.radius_km_haversine*2100)); } catch(e){ fail(); } };
+    const fail = () => { $("rMap").style.display="none"; $("rMapFail").style.display="block"; };
+    if (window.L) return go();
+    const css=document.createElement("link"); css.rel="stylesheet"; css.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
+    const js=document.createElement("script"); js.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; js.onload=go; js.onerror=fail; document.head.appendChild(js);
+    setTimeout(()=>{ if(!mapOk && !window.L) fail(); },9000);
+  }
+  $("rMapBox").addEventListener("toggle", ()=>{ if ($("rMapBox").open){ initMap(); if (map) setTimeout(()=>map.invalidateSize(),50); } });
+  const sync = () => { $("rCity").value=R.city; $("rSort").value=R.sort; $("rMax").value=R.max; $("rRooms").value=R.rooms; $("rDist").value=R.dist; $("rNoUnv").checked=!!R.nounv; $("rNoTag").checked=!!R.notag; };
+  [["rCity","city"],["rSort","sort"],["rRooms","rooms"],["rDist","dist"]].forEach(([id,k])=>$(id).addEventListener("change",e=>{ R[k]=e.target.value; save(); render(); }));
+  let tm; $("rMax").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ R.max=e.target.value.trim(); save(); render(); },220); });
+  $("rNoUnv").addEventListener("change",e=>{ R.nounv=e.target.checked; save(); render(); });
+  $("rNoTag").addEventListener("change",e=>{ R.notag=e.target.checked; save(); render(); });
+  $("togf").addEventListener("click",()=>{ const o=$("fbar").classList.toggle("open"); $("togf").setAttribute("aria-expanded",o); });
+  $("openAll").addEventListener("click",()=>document.querySelectorAll("#rCards details.card").forEach(d=>d.open=true));
+  $("closeAll").addEventListener("click",()=>document.querySelectorAll("#rCards details.card").forEach(d=>d.open=false));
+  $("reset").addEventListener("click",()=>{ Object.assign(R,R0); save(); sync(); render(); });
+  sync(); render();
+  const EXC = RD.excluded_renewal||[];
+  $("rExcCnt").textContent = EXC.length;
+  $("rExc").innerHTML = `<p class="lead">מודעות שנמצאו בבניין בתוך מתחם פינוי־בינוי / התחדשות או עם תמ״א 38 – ולכן לא ברשימה. מוצגת רק סיבת ההתחדשות. "רק בגלל ההתחדשות" = המודעה עמדה בשאר התנאים (מחיר, מרחק, תאריך, לא שותפים).</p><div class="tw"><table class="t"><thead><tr><th>כתובת</th><th>שכירות</th><th>מרחק</th><th>סיבה (התחדשות)</th><th></th></tr></thead><tbody>${EXC.map(e=>`<tr><td><a href="${esc(e.u)}" target="_blank" rel="noopener noreferrer">${esc(e.a)}</a>${e.only?' <span class="bdg yr">רק בגלל ההתחדשות</span>':""}</td><td class="num">${e.p?nf(e.p):"—"}</td><td class="num">${e.d!=null?e.d.toFixed(2):"—"}</td><td>${esc(e.why)}</td><td></td></tr>`).join("")}</tbody></table></div>`;
+}
+
 /* ---------- home ---------- */
 function pageHome(){
   metrics($("metrics"), ITEMS);
@@ -869,9 +950,9 @@ function initLook(){
 function boot(){
   initLook();
   const pg = document.body.dataset.page;
-  const f = {home:pageHome, city:pageCity, ren:pagePinui, map:pageMap, favs:pageFavs, method:pageMethod, views:pageViews, mot:pageMot}[pg];
+  const f = {home:pageHome, city:pageCity, ren:pagePinui, map:pageMap, favs:pageFavs, method:pageMethod, views:pageViews, mot:pageMot, rent:pageRent}[pg];
   if (f) f();
-  if (pg!=="city" && pg!=="map" && pg!=="ren" && (pg==="favs" || document.querySelector("details.card"))){
+  if (pg!=="city" && pg!=="map" && pg!=="ren" && pg!=="rent" && (pg==="favs" || document.querySelector("details.card"))){
     const bar=document.createElement("div"); bar.className="cardtools";
     bar.innerHTML='<button class="btn sec" id="cardsOpen" type="button">פתח הכול</button><button class="btn sec" id="cardsClose" type="button">סגור הכול</button><span class="mut">הכרטיסים סגורים כברירת מחדל – לחצו על כרטיס לפירוט מלא</span>';
     if (pg==="home" && $("topCards")) $("topCards").parentNode.insertBefore(bar,$("topCards")); else { const main=document.querySelector("main"); main.insertBefore(bar, main.firstChild); }
